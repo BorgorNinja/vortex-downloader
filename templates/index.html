@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VORTEX — YouTube Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Azeret+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080808;
+  --bg2:      #0e0e0e;
+  --bg3:      #141414;
+  --bg4:      #1a1a1a;
+  --border:   #1e1e1e;
+  --border2:  #2a2a2a;
+  --border3:  #333;
+  --accent:   #ff2525;
+  --accent2:  #ff6b2d;
+  --accent3:  #ffae00;
+  --text:     #e2e2e2;
+  --text2:    #888;
+  --text3:    #444;
+  --success:  #00e676;
+  --success2: #00c853;
+  --mono:     'Azeret Mono', monospace;
+  --sans:     'Barlow', sans-serif;
+  --display:  'Bebas Neue', sans-serif;
+  --radius:   4px;
+  --glow:     0 0 20px rgba(255,37,37,0.18);
+  --glow2:    0 0 40px rgba(255,37,37,0.08);
+  --glow-g:   0 0 20px rgba(0,230,118,0.2);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Noise texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* Grid background */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ── Header ────────────────────────────────────────────────────── */
+.header {
+  padding: 52px 0 44px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  opacity: 0;
+  transform: translateY(-12px);
+  animation: fadeSlideDown 0.6s ease forwards;
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.logo-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: clamp(52px, 9vw, 88px);
+  line-height: 0.88;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo span {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  color: var(--text2);
+}
+
+.badge .dot {
+  width: 5px; height: 5px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Divider ───────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--border) 40%, transparent 100%);
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: fadeIn 0.6s ease 0.3s forwards;
+}
+
+/* ── Section Label ─────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Input Section ─────────────────────────────────────────────── */
+.input-section {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeSlideUp 0.6s ease 0.2s forwards;
+}
+
+.url-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.url-input {
+  flex: 1;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 14px 18px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  caret-color: var(--accent);
+}
+
+.url-input::placeholder { color: var(--text3); }
+.url-input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+  height: 48px;
+}
+
+.btn-fetch {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+
+.btn-fetch:hover { border-color: var(--text2); background: var(--bg4); }
+.btn-fetch:active { transform: scale(0.97); }
+.btn-fetch.loading { pointer-events: none; color: var(--text2); }
+
+.btn-download {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(255,37,37,0.3);
+  min-width: 180px;
+  height: 52px;
+  font-size: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-download::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0s;
+}
+
+.btn-download:hover::before {
+  transform: translateX(100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-download:hover { box-shadow: 0 4px 32px rgba(255,37,37,0.5); transform: translateY(-1px); }
+.btn-download:active { transform: scale(0.97) translateY(0); }
+.btn-download:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-save {
+  background: linear-gradient(135deg, var(--success2) 0%, var(--success) 100%);
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(0,230,118,0.3);
+  min-width: 200px;
+  height: 52px;
+  font-size: 12px;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-save::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+  transform: translateX(-100%);
+}
+
+.btn-save:hover::before {
+  transform: translateX(100%);
+  transition: transform 0.5s ease;
+}
+
+.btn-save:hover { box-shadow: 0 4px 32px rgba(0,230,118,0.5); transform: translateY(-1px); }
+
+/* ── Format & Quality Toggles ──────────────────────────────────── */
+.options-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-group-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.toggle-group { display: flex; gap: 6px; }
+
+.toggle-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggle-btn:hover { border-color: var(--text3); color: var(--text); }
+.toggle-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.toggle-btn.active-mp3 { background: var(--accent3); border-color: var(--accent3); color: #000; }
+
+/* ── Info Card ─────────────────────────────────────────────────── */
+#info-card {
+  display: none;
+  margin: 32px 0;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#info-card.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.card-inner { display: flex; gap: 0; }
+
+.card-thumb {
+  flex-shrink: 0;
+  width: 180px;
+  height: 108px;
+  object-fit: cover;
+  display: block;
+}
+
+.card-thumb-placeholder {
+  flex-shrink: 0;
+  width: 180px;
+  height: 108px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 32px;
+}
+
+.card-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.card-type {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.card-title {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+
+.meta-item {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meta-item svg { opacity: 0.5; flex-shrink: 0; }
+
+/* ── Playlist entries ──────────────────────────────────────────── */
+.playlist-list {
+  border-top: 1px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.playlist-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.playlist-entry:last-child { border-bottom: none; }
+.playlist-entry:hover { background: var(--bg3); }
+
+.entry-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  width: 24px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.entry-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-duration {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+/* ── Download Section ──────────────────────────────────────────── */
+#download-section {
+  display: none;
+  margin-top: 28px;
+  opacity: 0;
+  animation: fadeSlideUp 0.4s ease forwards;
+}
+
+#download-section.visible { display: block; }
+
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ENHANCED PROGRESS SECTION
+   ════════════════════════════════════════════════════════════════ */
+#progress-section {
+  display: none;
+  margin-top: 28px;
+}
+
+#progress-section.visible { display: block; }
+
+/* ── Progress Shell ────────────────────────────────────────────── */
+.progress-shell {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Top accent stripe that shifts when active */
+.progress-shell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+  background-size: 200% 100%;
+  animation: gradientShift 2s linear infinite;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.progress-shell.active::before { opacity: 1; }
+
+/* ── Progress Header ───────────────────────────────────────────── */
+.progress-header {
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-title-wrap { flex: 1; overflow: hidden; }
+
+.progress-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.progress-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-pct-large {
+  font-family: var(--display);
+  font-size: 48px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  min-width: 80px;
+  text-align: right;
+}
+
+.progress-pct-large.done {
+  background: linear-gradient(135deg, var(--success2) 0%, var(--success) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Main Progress Bar ─────────────────────────────────────────── */
+.progress-bar-section {
+  padding: 16px 20px 8px;
+}
+
+.progress-track-outer {
+  position: relative;
+  height: 12px;
+  background: var(--bg3);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+  border-radius: 6px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0%;
+  will-change: width;
+}
+
+/* Gloss overlay */
+.progress-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+  border-radius: 6px;
+}
+
+/* Running shine */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 80px;
+  right: -40px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  animation: sweepShine 1.4s ease-in-out infinite;
+}
+
+.progress-fill.done {
+  background: linear-gradient(90deg, var(--success2) 0%, var(--success) 100%);
+}
+
+.progress-fill.done::after { animation: none; }
+
+/* Tick marks */
+.progress-ticks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  pointer-events: none;
+}
+
+.progress-tick {
+  flex: 1;
+  border-right: 1px solid rgba(0,0,0,0.2);
+}
+
+.progress-tick:last-child { border-right: none; }
+
+/* Percentage label below bar */
+.progress-bar-pct {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+}
+
+/* ── Segment bars (histogram-style) ───────────────────────────── */
+.segment-bars {
+  display: flex;
+  gap: 3px;
+  padding: 10px 20px 4px;
+  align-items: flex-end;
+  height: 56px;
+}
+
+.segment-bar {
+  flex: 1;
+  background: var(--bg3);
+  border-radius: 2px 2px 0 0;
+  transition: background 0.3s;
+  min-height: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.segment-bar.filled {
+  background: linear-gradient(180deg, var(--accent2) 0%, var(--accent) 100%);
+}
+
+.segment-bar.filled::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: rgba(255,255,255,0.12);
+}
+
+.segment-bar.done {
+  background: linear-gradient(180deg, var(--success) 0%, var(--success2) 100%);
+}
+
+/* ── Waveform visualizer ───────────────────────────────────────── */
+.waveform-row {
+  padding: 4px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 40px;
+}
+
+.wave-bar {
+  flex: 1;
+  background: var(--border);
+  border-radius: 1px;
+  height: 3px;
+  transform-origin: center;
+  transition: background 0.3s;
+}
+
+.waveform-row.active .wave-bar {
+  animation: waveAnim 0.8s ease-in-out infinite alternate;
+  background: rgba(255,37,37,0.45);
+}
+
+.waveform-row.active.done .wave-bar {
+  background: rgba(0,230,118,0.45);
+  animation-duration: 1.4s;
+}
+
+.wave-bar:nth-child(1)  { animation-delay: 0.00s; }
+.wave-bar:nth-child(2)  { animation-delay: 0.04s; }
+.wave-bar:nth-child(3)  { animation-delay: 0.08s; }
+.wave-bar:nth-child(4)  { animation-delay: 0.12s; }
+.wave-bar:nth-child(5)  { animation-delay: 0.16s; }
+.wave-bar:nth-child(6)  { animation-delay: 0.20s; }
+.wave-bar:nth-child(7)  { animation-delay: 0.24s; }
+.wave-bar:nth-child(8)  { animation-delay: 0.28s; }
+.wave-bar:nth-child(9)  { animation-delay: 0.32s; }
+.wave-bar:nth-child(10) { animation-delay: 0.36s; }
+.wave-bar:nth-child(11) { animation-delay: 0.40s; }
+.wave-bar:nth-child(12) { animation-delay: 0.44s; }
+.wave-bar:nth-child(13) { animation-delay: 0.48s; }
+.wave-bar:nth-child(14) { animation-delay: 0.52s; }
+.wave-bar:nth-child(15) { animation-delay: 0.56s; }
+.wave-bar:nth-child(16) { animation-delay: 0.60s; }
+.wave-bar:nth-child(17) { animation-delay: 0.64s; }
+.wave-bar:nth-child(18) { animation-delay: 0.68s; }
+.wave-bar:nth-child(19) { animation-delay: 0.72s; }
+.wave-bar:nth-child(20) { animation-delay: 0.76s; }
+.wave-bar:nth-child(21) { animation-delay: 0.80s; }
+.wave-bar:nth-child(22) { animation-delay: 0.84s; }
+.wave-bar:nth-child(23) { animation-delay: 0.88s; }
+.wave-bar:nth-child(24) { animation-delay: 0.92s; }
+.wave-bar:nth-child(25) { animation-delay: 0.96s; }
+
+/* ── Ring + Info ───────────────────────────────────────────────── */
+.progress-ring-wrap {
+  padding: 14px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.ring-svg {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 6px rgba(255,37,37,0.25));
+  transition: filter 0.4s;
+}
+
+.ring-svg.done {
+  filter: drop-shadow(0 0 6px rgba(0,230,118,0.3));
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--border2);
+  stroke-width: 5;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: url(#ringGrad);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 188.5;
+  stroke-dashoffset: 188.5;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ring-fill.done { stroke: url(#ringGradGreen); }
+
+.ring-info { flex: 1; }
+
+.ring-status-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+
+.ring-status-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.ring-status-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+}
+
+/* ── Phase Timeline ────────────────────────────────────────────── */
+.phase-timeline {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.phase-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.phase-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: calc(50% + 12px);
+  right: calc(-50% + 12px);
+  height: 1px;
+  background: var(--border2);
+  transition: background 0.4s;
+  z-index: 0;
+}
+
+.phase-step.done-step:not(:last-child)::after  { background: var(--success); }
+.phase-step.active-step:not(:last-child)::after { background: linear-gradient(90deg, var(--accent), var(--border2)); }
+
+.phase-node {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--text3);
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.phase-step.done-step .phase-node {
+  border-color: var(--success);
+  background: rgba(0,230,118,0.1);
+  color: var(--success);
+}
+
+.phase-step.active-step .phase-node {
+  border-color: var(--accent);
+  background: rgba(255,37,37,0.08);
+  color: var(--accent);
+  animation: pulseNode 1.5s ease-in-out infinite;
+}
+
+.phase-name {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  text-align: center;
+  transition: color 0.3s;
+}
+
+.phase-step.done-step .phase-name   { color: var(--success); }
+.phase-step.active-step .phase-name { color: var(--accent); }
+
+/* ── Stats Row ─────────────────────────────────────────────────── */
+.progress-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+}
+
+.stat-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.stat-block:last-child {
+  border-right: none;
+  padding-right: 0;
+  padding-left: 20px;
+  flex: 0;
+  align-items: flex-end;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.stat-value.speed { color: var(--accent2); }
+.stat-value.eta   { color: var(--accent3); }
+
+/* ── Status Bar ────────────────────────────────────────────────── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--bg3);
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.status-dot-ring {
+  position: relative;
+  width: 10px; height: 10px;
+  flex-shrink: 0;
+}
+
+.status-dot-ring .dot-inner {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--text3);
+  transition: background 0.3s;
+}
+
+.status-dot-ring .dot-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--text3);
+  transition: border-color 0.3s;
+}
+
+.status-dot-ring.downloading .dot-inner { background: var(--accent); }
+.status-dot-ring.downloading .dot-ring  { border-color: var(--accent); animation: pingRing 1s ease-in-out infinite; }
+.status-dot-ring.processing .dot-inner  { background: var(--accent3); }
+.status-dot-ring.processing .dot-ring   { border-color: var(--accent3); animation: pingRing 1.2s ease-in-out infinite; }
+.status-dot-ring.done .dot-inner        { background: var(--success); }
+.status-dot-ring.done .dot-ring         { border-color: var(--success); animation: none; }
+.status-dot-ring.error .dot-inner       { background: var(--accent); }
+
+.status-text-main {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  transition: color 0.3s;
+}
+
+.status-text-main.downloading { color: var(--accent); }
+.status-text-main.processing  { color: var(--accent3); }
+.status-text-main.done        { color: var(--success); }
+.status-text-main.error       { color: var(--accent); }
+
+.status-elapsed-label {
+  margin-left: auto;
+  color: var(--text3);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ENHANCED SAVE SECTION
+   ════════════════════════════════════════════════════════════════ */
+#save-section {
+  display: none;
+  margin-top: 28px;
+  animation: fadeSlideUp 0.5s ease forwards;
+}
+
+#save-section.visible { display: block; }
+
+.save-shell {
+  background: var(--bg2);
+  border: 1px solid rgba(0,230,118,0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.save-shell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--success2), var(--success), var(--success2));
+  background-size: 200% 100%;
+  animation: gradientShift 3s linear infinite;
+}
+
+.save-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  flex-wrap: wrap;
+}
+
+.save-icon-wrap {
+  width: 52px; height: 52px;
+  background: rgba(0,230,118,0.08);
+  border: 1px solid rgba(0,230,118,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success);
+  flex-shrink: 0;
+  animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.save-text { flex: 1; }
+
+.save-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.save-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  word-break: break-all;
+}
+
+.save-stats-row {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid rgba(0,230,118,0.1);
+  padding: 14px 24px;
+  flex-wrap: wrap;
+}
+
+.save-stat {
+  flex: 1;
+  min-width: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.save-stat:last-child { border-right: none; }
+
+.save-stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.save-stat-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 500;
+}
+
+/* ── Confetti ──────────────────────────────────────────────────── */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  opacity: 0;
+  animation: confettiFall 1.8s ease-in forwards;
+  border-radius: 1px;
+}
+
+/* ── Error Box ─────────────────────────────────────────────────── */
+#error-box {
+  display: none;
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: rgba(255,37,37,0.06);
+  border: 1px solid rgba(255,37,37,0.25);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #ff6b6b;
+  line-height: 1.5;
+  animation: fadeSlideUp 0.3s ease forwards;
+}
+
+#error-box.visible { display: block; }
+
+.error-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+.footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Spinner ───────────────────────────────────────────────────── */
+.spinner {
+  width: 8px; height: 8px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   KEYFRAMES
+   ════════════════════════════════════════════════════════════════ */
+@keyframes fadeSlideDown {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sweepShine {
+  0%   { right: 120%; opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { right: -80px; opacity: 0; }
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+@keyframes waveAnim {
+  0%   { transform: scaleY(0.2); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes pingRing {
+  0%   { transform: scale(1);   opacity: 1; }
+  70%  { transform: scale(2);   opacity: 0; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+
+@keyframes pulseNode {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,37,37,0.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(255,37,37,0); }
+}
+
+@keyframes successPop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 580px) {
+  .card-thumb, .card-thumb-placeholder { width: 120px; height: 72px; }
+  .url-row { flex-direction: column; }
+  .btn-fetch { width: 100%; }
+  .header { padding: 36px 0 30px; }
+  .header-meta { display: none; }
+  .options-row { gap: 16px; }
+  .save-main { flex-direction: column; }
+  .progress-pct-large { font-size: 36px; }
+  .phase-name { display: none; }
+  .stat-block { padding-right: 10px; }
+  .stat-block:last-child { padding-left: 10px; }
+  .progress-ring-wrap { flex-direction: column; gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo-wrap">
+      <div class="logo-eyebrow">// youtube downloader</div>
+      <div class="logo">VOR<span>TEX</span></div>
+    </div>
+    <div class="header-meta">
+      <div class="badge">
+        <span class="dot"></span>
+        Online
+      </div>
+      <div class="badge">yt-dlp engine</div>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- Input Section -->
+  <div class="input-section">
+    <div class="section-label">01 — Paste URL</div>
+
+    <div class="url-row">
+      <input
+        type="url"
+        class="url-input"
+        id="url-input"
+        placeholder="https://youtube.com/watch?v=... or playlist URL"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="btn btn-fetch" id="fetch-btn" onclick="fetchInfo()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Fetch
+      </button>
+    </div>
+
+    <div class="section-label" style="margin-top: 24px;">02 — Options</div>
+
+    <div class="options-row">
+      <div class="option-group">
+        <div class="option-group-label">Format</div>
+        <div class="toggle-group" id="format-group">
+          <button class="toggle-btn active" data-format="mp4" onclick="selectFormat('mp4')">MP4</button>
+          <button class="toggle-btn" data-format="mp3" onclick="selectFormat('mp3')">MP3</button>
+        </div>
+      </div>
+
+      <div class="option-group" id="quality-group">
+        <div class="option-group-label">Quality</div>
+        <div class="toggle-group" id="quality-btns">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Box -->
+  <div id="error-box">
+    <div class="error-label">Error</div>
+    <div id="error-msg"></div>
+  </div>
+
+  <!-- Info Card -->
+  <div id="info-card">
+    <div class="section-label" style="margin-bottom: 10px;">03 — Video Info</div>
+    <div class="card" id="info-card-inner">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- Download Section -->
+  <div id="download-section">
+    <div class="section-label" style="margin-bottom: 14px;">04 — Download</div>
+    <div class="download-row">
+      <button class="btn btn-download" id="download-btn" onclick="startDownload()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Start Download
+      </button>
+      <span style="font-family: var(--mono); font-size: 11px; color: var(--text3);" id="format-label">MP4 • 720p</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ENHANCED PROGRESS SECTION
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="progress-section">
+    <div class="section-label" style="margin-bottom: 14px;" id="progress-section-label">Downloading...</div>
+
+    <div class="progress-shell" id="progress-shell">
+
+      <!-- Header with large % counter -->
+      <div class="progress-header">
+        <div class="progress-title-wrap">
+          <div class="progress-label">Now Downloading</div>
+          <div class="progress-title" id="progress-title">—</div>
+        </div>
+        <div class="progress-pct-large" id="progress-pct-large">0%</div>
+      </div>
+
+      <!-- Primary progress bar -->
+      <div class="progress-bar-section">
+        <div class="progress-track-outer">
+          <div class="progress-fill" id="progress-fill"></div>
+          <div class="progress-ticks">
+            <div class="progress-tick"></div><div class="progress-tick"></div>
+            <div class="progress-tick"></div><div class="progress-tick"></div>
+            <div class="progress-tick"></div><div class="progress-tick"></div>
+            <div class="progress-tick"></div><div class="progress-tick"></div>
+            <div class="progress-tick"></div><div class="progress-tick"></div>
+          </div>
+        </div>
+        <div class="progress-bar-pct">
+          <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+        </div>
+      </div>
+
+      <!-- Segment histogram bars -->
+      <div class="segment-bars" id="segment-bars">
+        <!-- 24 columns — built by JS -->
+      </div>
+
+      <!-- Waveform animation -->
+      <div class="waveform-row" id="waveform-row">
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+
+      <!-- Circular ring + status info -->
+      <div class="progress-ring-wrap">
+        <svg class="ring-svg" id="ring-svg" width="72" height="72" viewBox="0 0 72 72">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ff2525"/>
+              <stop offset="100%" stop-color="#ff6b2d"/>
+            </linearGradient>
+            <linearGradient id="ringGradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00c853"/>
+              <stop offset="100%" stop-color="#00e676"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="36" cy="36" r="30"/>
+          <circle class="ring-fill" id="ring-fill" cx="36" cy="36" r="30"/>
+        </svg>
+        <div class="ring-info">
+          <div class="ring-status-label">Current Status</div>
+          <div class="ring-status-value" id="ring-status-value">Queued</div>
+          <div class="ring-status-sub" id="ring-status-sub">Waiting to start...</div>
+        </div>
+      </div>
+
+      <!-- Phase timeline -->
+      <div class="phase-timeline">
+        <div class="phase-step" id="phase-queued">
+          <div class="phase-node">Q</div>
+          <div class="phase-name">Queued</div>
+        </div>
+        <div class="phase-step" id="phase-downloading">
+          <div class="phase-node">D</div>
+          <div class="phase-name">Download</div>
+        </div>
+        <div class="phase-step" id="phase-processing">
+          <div class="phase-node">P</div>
+          <div class="phase-name">Process</div>
+        </div>
+        <div class="phase-step" id="phase-done">
+          <div class="phase-node">✓</div>
+          <div class="phase-name">Done</div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="progress-stats-row">
+        <div class="stat-block">
+          <div class="stat-label">Speed</div>
+          <div class="stat-value speed" id="stat-speed">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">ETA</div>
+          <div class="stat-value eta" id="stat-eta">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Elapsed</div>
+          <div class="stat-value" id="stat-elapsed">0s</div>
+        </div>
+        <div class="stat-block" style="flex:0;align-items:flex-end;padding-left:20px;border-left:1px solid var(--border);border-right:none;padding-right:0;">
+          <div class="stat-label">Progress</div>
+          <div class="stat-value" id="stat-pct-small">0%</div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="status-dot-ring" id="status-dot-ring">
+          <div class="dot-inner"></div>
+          <div class="dot-ring"></div>
+        </div>
+        <span class="status-text-main" id="status-text-main">Queued</span>
+        <span class="status-elapsed-label" id="status-elapsed-label">00:00</span>
+      </div>
+
+    </div><!-- /progress-shell -->
+  </div><!-- /progress-section -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ENHANCED SAVE SECTION
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="save-section">
+    <div class="save-shell">
+      <div class="save-main">
+        <div class="save-icon-wrap">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div class="save-text">
+          <div class="save-title">Download Complete!</div>
+          <div class="save-sub" id="save-filename">—</div>
+        </div>
+        <a class="btn btn-save" id="save-btn" href="#" download>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Save File
+        </a>
+      </div>
+      <div class="save-stats-row">
+        <div class="save-stat">
+          <div class="save-stat-label">Format</div>
+          <div class="save-stat-val" id="save-stat-format">—</div>
+        </div>
+        <div class="save-stat">
+          <div class="save-stat-label">Quality</div>
+          <div class="save-stat-val" id="save-stat-quality">—</div>
+        </div>
+        <div class="save-stat">
+          <div class="save-stat-label">Duration</div>
+          <div class="save-stat-val" id="save-stat-duration">—</div>
+        </div>
+        <div class="save-stat">
+          <div class="save-stat-label">Time Taken</div>
+          <div class="save-stat-val" id="save-stat-time">—</div>
+        </div>
+      </div>
+      <div style="padding: 12px 24px; border-top: 1px solid rgba(0,230,118,0.1);">
+        <button class="btn btn-fetch" onclick="resetAll()" style="height: 38px; font-size: 10px;">
+          ↩ Download another
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Confetti container -->
+<div class="confetti-container" id="confetti-container"></div>
+
+<footer class="footer">
+  <span>VORTEX — YouTube Downloader</span>
+  <span>Powered by yt-dlp + ffmpeg</span>
+</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentFormat  = 'mp4';
+let currentQuality = '720p';
+let currentInfo    = null;
+let currentTaskId  = null;
+let sseSource      = null;
+let startTime      = null;
+let elapsedTimer   = null;
+
+const MP4_QUALITIES = ['360p', '480p', '720p', '1080p', 'best'];
+const MP3_QUALITIES = ['128k', '192k', '320k'];
+const SEGMENTS      = 24;
+
+// Pre-generate random heights for segment bars (stable, not re-randomised each tick)
+const segHeights = Array.from({ length: SEGMENTS }, () => 8 + Math.floor(Math.random() * 36));
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  setQualityButtons(MP4_QUALITIES, '720p');
+  buildSegmentBars();
+
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') fetchInfo();
+  });
+
+  const observer = new MutationObserver(() => {
+    const card = document.getElementById('info-card');
+    if (card.classList.contains('visible')) {
+      card.style.opacity   = '0';
+      card.style.transform = 'translateY(20px)';
+      requestAnimationFrame(() => {
+        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        card.style.opacity    = '1';
+        card.style.transform  = 'translateY(0)';
+      });
+    }
+  });
+  observer.observe(document.getElementById('info-card'), { attributes: true, attributeFilter: ['class'] });
+});
+
+// ── Build segment bars ─────────────────────────────────────────────────────
+function buildSegmentBars() {
+  const container = document.getElementById('segment-bars');
+  container.innerHTML = '';
+  for (let i = 0; i < SEGMENTS; i++) {
+    const bar = document.createElement('div');
+    bar.className        = 'segment-bar';
+    bar.id               = `seg-${i}`;
+    bar.style.height     = `${segHeights[i]}px`;
+    container.appendChild(bar);
+  }
+}
+
+// ── Format Selection ───────────────────────────────────────────────────────
+function selectFormat(fmt) {
+  currentFormat = fmt;
+  document.querySelectorAll('#format-group .toggle-btn').forEach(b => {
+    b.classList.remove('active', 'active-mp3');
+    if (b.dataset.format === fmt)
+      b.classList.add(fmt === 'mp3' ? 'active-mp3' : 'active');
+  });
+
+  if (fmt === 'mp4') {
+    setQualityButtons(MP4_QUALITIES, '720p');
+    currentQuality = '720p';
+  } else {
+    setQualityButtons(MP3_QUALITIES, '192k');
+    currentQuality = '192k';
+  }
+  updateFormatLabel();
+}
+
+function setQualityButtons(qualities, defaultQ) {
+  const container = document.getElementById('quality-btns');
+  container.innerHTML = '';
+  qualities.forEach(q => {
+    const btn       = document.createElement('button');
+    btn.className   = 'toggle-btn' + (q === defaultQ ? ' active' : '');
+    btn.textContent = q;
+    btn.onclick     = () => selectQuality(q);
+    container.appendChild(btn);
+  });
+}
+
+function selectQuality(q) {
+  currentQuality = q;
+  document.querySelectorAll('#quality-btns .toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === q);
+  });
+  updateFormatLabel();
+}
+
+function updateFormatLabel() {
+  const label = document.getElementById('format-label');
+  if (label) {
+    const q = currentQuality === 'best' ? 'Best quality' : currentQuality;
+    label.textContent = `${currentFormat.toUpperCase()} • ${q}`;
+  }
+}
+
+// ── Fetch Info ─────────────────────────────────────────────────────────────
+async function fetchInfo() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { showError('Please paste a YouTube URL first.'); return; }
+
+  hideError();
+  hideSection('info-card');
+  hideSection('download-section');
+  hideSection('progress-section');
+  hideSection('save-section');
+  currentInfo = null;
+  currentTaskId = null;
+
+  const btn = document.getElementById('fetch-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spinner"></span> Fetching...';
+
+  try {
+    const res  = await fetch('/api/info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      showError(data.error || 'Failed to fetch video info.');
+      return;
+    }
+
+    currentInfo = data;
+    renderInfoCard(data);
+    showSection('info-card');
+    showSection('download-section');
+    updateFormatLabel();
+
+  } catch (e) {
+    showError('Network error — is the server running?');
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Fetch`;
+  }
+}
+
+// ── Render Info Card ───────────────────────────────────────────────────────
+function renderInfoCard(info) {
+  const inner = document.getElementById('info-card-inner');
+
+  const thumb = info.thumbnail
+    ? `<img class="card-thumb" src="${escHtml(info.thumbnail)}" alt="thumbnail" onerror="this.style.display='none'">`
+    : `<div class="card-thumb-placeholder">▶</div>`;
+
+  const formatNum = n => n ? Number(n).toLocaleString() : null;
+
+  let metaHtml = '';
+  if (info.is_playlist) {
+    metaHtml = `
+      <div class="meta-item">${iconList()} ${info.count} video${info.count !== 1 ? 's' : ''}</div>
+      <div class="meta-item">${iconChannel()} ${escHtml(info.channel || 'Unknown')}</div>
+    `;
+  } else {
+    metaHtml = `
+      ${info.duration   ? `<div class="meta-item">${iconClock()} ${escHtml(info.duration)}</div>` : ''}
+      ${info.channel    ? `<div class="meta-item">${iconChannel()} ${escHtml(info.channel)}</div>` : ''}
+      ${info.view_count ? `<div class="meta-item">${iconEye()} ${formatNum(info.view_count)} views</div>` : ''}
+    `;
+  }
+
+  const typeLabel = info.is_playlist ? 'PLAYLIST' : 'VIDEO';
+
+  let playlistHtml = '';
+  if (info.is_playlist && info.entries && info.entries.length) {
+    const rows = info.entries.map((e, i) => `
+      <div class="playlist-entry">
+        <span class="entry-num">${i + 1}</span>
+        <span class="entry-title">${escHtml(e.title)}</span>
+        <span class="entry-duration">${escHtml(e.duration || '')}</span>
+      </div>
+    `).join('');
+    playlistHtml = `<div class="playlist-list">${rows}</div>`;
+  }
+
+  inner.innerHTML = `
+    <div class="card-inner">
+      ${thumb}
+      <div class="card-body">
+        <div class="card-type">${typeLabel}</div>
+        <div class="card-title">${escHtml(info.title)}</div>
+        <div class="card-meta">${metaHtml}</div>
+      </div>
+    </div>
+    ${playlistHtml}
+  `;
+}
+
+// ── Start Download ─────────────────────────────────────────────────────────
+async function startDownload() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url || !currentInfo) { showError('Please fetch video info first.'); return; }
+
+  if (sseSource) { sseSource.close(); sseSource = null; }
+
+  hideError();
+  hideSection('save-section');
+
+  const btn   = document.getElementById('download-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+  try {
+    const res  = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format: currentFormat, quality: currentQuality })
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      showError(data.error || 'Failed to start download.');
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
+      return;
+    }
+
+    currentTaskId = data.task_id;
+    startTime     = Date.now();
+
+    resetProgressUI();
+    showSection('progress-section');
+    startElapsedTimer();
+    subscribeProgress(currentTaskId);
+
+  } catch (e) {
+    showError('Network error — is the server running?');
+    btn.disabled = false;
+  }
+}
+
+// ── Reset progress UI ──────────────────────────────────────────────────────
+function resetProgressUI() {
+  setFill(0, false);
+  setRing(0, false);
+  setSegments(0, false);
+
+  el('progress-pct-large').textContent    = '0%';
+  el('progress-pct-large').className      = 'progress-pct-large';
+  el('stat-speed').textContent            = '—';
+  el('stat-eta').textContent              = '—';
+  el('stat-elapsed').textContent          = '0s';
+  el('stat-pct-small').textContent        = '0%';
+  el('progress-title').textContent        = (currentInfo && currentInfo.title) || '—';
+  el('ring-status-value').textContent     = 'Queued';
+  el('ring-status-sub').textContent       = 'Preparing download...';
+  el('progress-section-label').textContent = 'Downloading...';
+  el('status-elapsed-label').textContent  = '00:00';
+
+  setStatusStyle('queued');
+  setPhase('queued');
+
+  el('progress-shell').classList.add('active');
+  el('waveform-row').classList.remove('done');
+  el('waveform-row').classList.add('active');
+  el('ring-svg').classList.remove('done');
+}
+
+// ── SSE Progress ───────────────────────────────────────────────────────────
+function subscribeProgress(taskId) {
+  sseSource = new EventSource(`/api/progress/${taskId}`);
+
+  sseSource.onmessage = e => {
+    const task = JSON.parse(e.data);
+    updateProgress(task);
+
+    if (task.status === 'done') {
+      sseSource.close();
+      showDone(taskId, task);
+    } else if (task.status === 'error') {
+      sseSource.close();
+      showError(task.error || 'Download failed.');
+      hideSection('progress-section');
+      resetDownloadBtn();
+      stopElapsedTimer();
+    }
+  };
+
+  sseSource.onerror = () => {
+    sseSource.close();
+    setTimeout(() => pollStatus(taskId), 1000);
+  };
+}
+
+async function pollStatus(taskId) {
+  try {
+    const res  = await fetch(`/api/status/${taskId}`);
+    const task = await res.json();
+    updateProgress(task);
+    if (task.status === 'done') {
+      showDone(taskId, task);
+    } else if (task.status === 'error') {
+      showError(task.error || 'Download failed.');
+      hideSection('progress-section');
+      resetDownloadBtn();
+      stopElapsedTimer();
+    } else {
+      setTimeout(() => pollStatus(taskId), 800);
+    }
+  } catch {}
+}
+
+// ── Update Progress ────────────────────────────────────────────────────────
+function updateProgress(task) {
+  const pct = task.progress || 0;
+
+  setFill(pct, task.status === 'done');
+  setRing(pct, task.status === 'done');
+  setSegments(pct, task.status === 'done');
+
+  el('progress-pct-large').textContent = `${Math.round(pct)}%`;
+  el('progress-pct-large').className   = 'progress-pct-large' + (task.status === 'done' ? ' done' : '');
+  el('stat-pct-small').textContent     = `${Math.round(pct)}%`;
+
+  if (task.speed) el('stat-speed').textContent = task.speed;
+  if (task.eta)   el('stat-eta').textContent   = task.eta;
+  if (task.title) el('progress-title').textContent = task.title;
+
+  setStatusStyle(task.status);
+  setPhase(task.status);
+
+  // Ring label
+  const labels = {
+    queued:      ['Queued',      'Waiting to start...'],
+    downloading: ['Downloading', task.speed ? `Speed: ${task.speed}` : 'Pulling from servers...'],
+    processing:  ['Processing',  'Converting & muxing...'],
+    done:        ['Complete',    'File ready to save!'],
+    error:       ['Error',       task.error || 'Something went wrong'],
+  };
+  const [sv, ss] = labels[task.status] || ['—', ''];
+  el('ring-status-value').textContent = sv;
+  el('ring-status-sub').textContent   = ss;
+
+  if (task.status === 'done' || task.status === 'processing') {
+    el('waveform-row').classList.add('done');
+  }
+
+  if (task.status === 'done') {
+    el('ring-svg').classList.add('done');
+  }
+}
+
+// ── Fill bar ───────────────────────────────────────────────────────────────
+function setFill(pct, isDone) {
+  const fill = el('progress-fill');
+  fill.style.width = `${pct}%`;
+  isDone ? fill.classList.add('done') : fill.classList.remove('done');
+}
+
+// ── Ring ───────────────────────────────────────────────────────────────────
+function setRing(pct, isDone) {
+  const r             = 30;
+  const circumference = 2 * Math.PI * r; // ≈ 188.5
+  const offset        = circumference - (pct / 100) * circumference;
+  const ring          = el('ring-fill');
+  ring.style.strokeDasharray  = circumference;
+  ring.style.strokeDashoffset = offset;
+  isDone ? ring.classList.add('done') : ring.classList.remove('done');
+}
+
+// ── Segment bars ───────────────────────────────────────────────────────────
+function setSegments(pct, isDone) {
+  const filled = Math.floor((pct / 100) * SEGMENTS);
+  for (let i = 0; i < SEGMENTS; i++) {
+    const bar = el(`seg-${i}`);
+    if (!bar) continue;
+    if (isDone) {
+      bar.classList.remove('filled');
+      bar.classList.add('done');
+    } else if (i < filled) {
+      bar.classList.add('filled');
+      bar.classList.remove('done');
+    } else {
+      bar.classList.remove('filled', 'done');
+    }
+  }
+}
+
+// ── Status dot / text ──────────────────────────────────────────────────────
+function setStatusStyle(status) {
+  const dot   = el('status-dot-ring');
+  const txt   = el('status-text-main');
+  dot.className = `status-dot-ring ${status}`;
+  txt.className = `status-text-main ${status}`;
+  const labels  = { queued: 'Queued', downloading: 'Downloading', processing: 'Processing', done: 'Complete', error: 'Error' };
+  txt.textContent = labels[status] || status;
+}
+
+// ── Phase timeline ─────────────────────────────────────────────────────────
+function setPhase(status) {
+  const order = ['queued', 'downloading', 'processing', 'done'];
+  const idx   = order.indexOf(status);
+
+  order.forEach((phase, i) => {
+    const step = el(`phase-${phase}`);
+    if (!step) return;
+    step.classList.remove('active-step', 'done-step');
+    if (i < idx)        step.classList.add('done-step');
+    else if (i === idx) step.classList.add('active-step');
+  });
+}
+
+// ── Elapsed timer ──────────────────────────────────────────────────────────
+function startElapsedTimer() {
+  stopElapsedTimer();
+  elapsedTimer = setInterval(() => {
+    if (!startTime) return;
+    const secs = Math.floor((Date.now() - startTime) / 1000);
+    const m    = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s    = (secs % 60).toString().padStart(2, '0');
+    el('status-elapsed-label').textContent = `${m}:${s}`;
+    el('stat-elapsed').textContent         = secs < 60 ? `${secs}s` : `${m}:${s}`;
+  }, 1000);
+}
+
+function stopElapsedTimer() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+}
+
+// ── Show Done ──────────────────────────────────────────────────────────────
+function showDone(taskId, task) {
+  stopElapsedTimer();
+
+  setFill(100, true);
+  setRing(100, true);
+  setSegments(100, true);
+  el('progress-pct-large').textContent = '100%';
+  el('progress-pct-large').className   = 'progress-pct-large done';
+  setStatusStyle('done');
+  setPhase('done');
+  el('progress-shell').classList.remove('active');
+  el('progress-section-label').textContent = 'Complete!';
+
+  setTimeout(() => {
+    hideSection('progress-section');
+
+    const displayName = (task.filename || '').replace(/^[0-9a-f-]+_/, '');
+    el('save-btn').href             = `/api/file/${taskId}`;
+    el('save-filename').textContent = displayName || 'Ready to download';
+
+    const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+    const m       = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s       = (elapsed % 60).toString().padStart(2, '0');
+
+    el('save-stat-format').textContent   = currentFormat.toUpperCase();
+    el('save-stat-quality').textContent  = currentQuality === 'best' ? 'Best' : currentQuality;
+    el('save-stat-duration').textContent = (currentInfo && currentInfo.duration) || '—';
+    el('save-stat-time').textContent     = elapsed < 60 ? `${elapsed}s` : `${m}:${s}`;
+
+    showSection('save-section');
+    fireConfetti();
+    resetDownloadBtn();
+  }, 700);
+}
+
+// ── Confetti burst ─────────────────────────────────────────────────────────
+function fireConfetti() {
+  const container = el('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#ff2525', '#ff6b2d', '#ffae00', '#00e676', '#e2e2e2', '#ff9a9a'];
+  for (let i = 0; i < 70; i++) {
+    const piece = document.createElement('div');
+    piece.className              = 'confetti-piece';
+    piece.style.left             = `${Math.random() * 100}%`;
+    piece.style.top              = `${-10 + Math.random() * -30}px`;
+    piece.style.background       = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.transform        = `rotate(${Math.random() * 360}deg)`;
+    piece.style.animationDelay   = `${Math.random() * 0.8}s`;
+    piece.style.animationDuration = `${1.4 + Math.random() * 0.8}s`;
+    piece.style.width            = `${4 + Math.random() * 6}px`;
+    piece.style.height           = `${6 + Math.random() * 10}px`;
+    piece.style.borderRadius     = Math.random() > 0.5 ? '50%' : '1px';
+    container.appendChild(piece);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 3000);
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (sseSource) { sseSource.close(); sseSource = null; }
+  stopElapsedTimer();
+  currentInfo   = null;
+  currentTaskId = null;
+  startTime     = null;
+
+  el('url-input').value = '';
+  hideError();
+  hideSection('info-card');
+  hideSection('download-section');
+  hideSection('progress-section');
+  hideSection('save-section');
+  resetDownloadBtn();
+  el('url-input').focus();
+}
+
+function resetDownloadBtn() {
+  const btn = el('download-btn');
+  if (btn) {
+    btn.disabled  = false;
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
+  }
+}
+
+// ── UI Helpers ─────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+
+function showSection(id) {
+  const e = el(id);
+  if (!e) return;
+  e.classList.add('visible');
+  if (id !== 'info-card') e.style.display = 'block';
+}
+
+function hideSection(id) {
+  const e = el(id);
+  if (!e) return;
+  e.classList.remove('visible');
+  if (id !== 'info-card') e.style.display = 'none';
+}
+
+function showError(msg) {
+  const box = el('error-box'), txt = el('error-msg');
+  if (box && txt) { txt.textContent = msg; box.classList.add('visible'); box.style.display = 'block'; }
+}
+
+function hideError() {
+  const box = el('error-box');
+  if (box) { box.classList.remove('visible'); box.style.display = 'none'; }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Icon SVGs ──────────────────────────────────────────────────────────────
+const svgAttrs = `width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
+
+function iconClock()   { return `<svg ${svgAttrs}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`; }
+function iconChannel() { return `<svg ${svgAttrs}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
+function iconEye()     { return `<svg ${svgAttrs}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
+function iconList()    { return `<svg ${svgAttrs}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`; }
+</script>
+</body>
+</html>
