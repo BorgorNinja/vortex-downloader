@@ -4,6 +4,8 @@ import json
 import time
 import threading
 import re
+import shutil
+import zipfile
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, Response, send_file
 from flask_cors import CORS
@@ -39,16 +41,24 @@ def format_duration(seconds):
         return f"{h}:{m:02d}:{s:02d}"
     return f"{m}:{s:02d}"
 
-def cleanup_file(path: Path, delay: int = 120):
+def cleanup_path(path: Path, delay: int = 120):
+    """Delete a file or directory tree after a delay."""
     def _cleanup():
         time.sleep(delay)
         try:
-            if path.exists():
+            if path.is_dir():
+                shutil.rmtree(path, ignore_errors=True)
+                print(f"[cleanup] Deleted dir {path.name}")
+            elif path.exists():
                 path.unlink()
                 print(f"[cleanup] Deleted {path.name}")
         except Exception as e:
             print(f"[cleanup] Error: {e}")
     threading.Thread(target=_cleanup, daemon=True).start()
+
+def sanitize_filename(name: str) -> str:
+    """Strip characters that are unsafe in filenames/zip names."""
+    return re.sub(r'[\/*?:"<>|]', "_", name).strip().rstrip(".")[:200] or "playlist"
 
 # ─── Routes ─────────────────────────────────────────────────────────────────
 
@@ -119,6 +129,8 @@ def start_download():
     url = (data or {}).get("url", "").strip()
     fmt = (data or {}).get("format", "mp4").lower()
     quality = (data or {}).get("quality", "best")
+    playlist_title = (data or {}).get("playlist_title", "").strip()
+    is_playlist = bool((data or {}).get("is_playlist", False))
 
     if not url or not is_youtube_url(url):
         return jsonify({"error": "Invalid URL"}), 400
@@ -136,19 +148,28 @@ def start_download():
             "title": "",
             "error": None,
             "format": fmt,
+            "is_playlist": is_playlist,
         }
 
     thread = threading.Thread(
         target=run_download,
-        args=(task_id, url, fmt, quality),
+        args=(task_id, url, fmt, quality, is_playlist, playlist_title),
         daemon=True
     )
     thread.start()
     return jsonify({"task_id": task_id})
 
 
-def run_download(task_id: str, url: str, fmt: str, quality: str):
-    output_template = str(DOWNLOAD_DIR / f"{task_id}_%(title)s.%(ext)s")
+def run_download(task_id: str, url: str, fmt: str, quality: str,
+                 is_playlist: bool = False, playlist_title: str = ""):
+    # Use a per-task subdirectory so concurrent downloads never collide
+    task_dir = DOWNLOAD_DIR / task_id
+    task_dir.mkdir(exist_ok=True)
+    output_template = str(task_dir / "%(playlist_index)s - %(title)s.%(ext)s")
+
+    # Track which track is currently downloading for the UI label
+    current_index = [0]
+    total_count   = [0]
 
     def progress_hook(d):
         with tasks_lock:
@@ -163,18 +184,30 @@ def run_download(task_id: str, url: str, fmt: str, quality: str):
                 except ValueError:
                     pct = 0
 
+                info = d.get("info_dict", {})
+                idx  = info.get("playlist_index") or info.get("playlist_autonumber") or current_index[0]
+                n    = info.get("playlist_count") or total_count[0] or 1
+
+                # For playlists: scale per-track 0-100 into overall progress
+                if is_playlist and n > 1:
+                    overall = ((idx - 1) * 100 + pct) / n
+                    task["progress"] = round(overall, 1)
+                else:
+                    task["progress"] = round(pct, 1)
+
                 task["status"] = "downloading"
-                task["progress"] = round(pct, 1)
-                task["speed"] = d.get("_speed_str", "").strip()
-                task["eta"] = d.get("_eta_str", "").strip()
-                task["title"] = d.get("info_dict", {}).get("title", "")
+                task["speed"]  = d.get("_speed_str", "").strip()
+                task["eta"]    = d.get("_eta_str", "").strip()
+                task["title"]  = info.get("title", "")
+
+                current_index[0] = idx
+                total_count[0]   = n
 
             elif d["status"] == "finished":
-                task["status"] = "processing"
+                task["status"]   = "processing"
                 task["progress"] = 99
 
     if fmt == "mp3":
-        # Quality map: 128k → 5, 192k → 2, 320k → 0
         quality_map = {"128k": "5", "192k": "2", "320k": "0"}
         audio_quality = quality_map.get(quality, "2")
 
@@ -192,13 +225,12 @@ def run_download(task_id: str, url: str, fmt: str, quality: str):
             "prefer_ffmpeg": True,
         }
     else:
-        # MP4 quality map
         quality_map = {
-            "360p": "bestvideo[height<=360]+bestaudio/best[height<=360]",
-            "480p": "bestvideo[height<=480]+bestaudio/best[height<=480]",
-            "720p": "bestvideo[height<=720]+bestaudio/best[height<=720]",
+            "360p":  "bestvideo[height<=360]+bestaudio/best[height<=360]",
+            "480p":  "bestvideo[height<=480]+bestaudio/best[height<=480]",
+            "720p":  "bestvideo[height<=720]+bestaudio/best[height<=720]",
             "1080p": "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
-            "best": "bestvideo+bestaudio/best",
+            "best":  "bestvideo+bestaudio/best",
         }
         fmt_str = quality_map.get(quality, "bestvideo+bestaudio/best")
 
@@ -220,29 +252,63 @@ def run_download(task_id: str, url: str, fmt: str, quality: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        # Find the output file
-        files = sorted(DOWNLOAD_DIR.glob(f"{task_id}_*"))
-        if files:
-            output_file = files[0]
-            with tasks_lock:
-                tasks[task_id]["status"] = "done"
-                tasks[task_id]["progress"] = 100
-                tasks[task_id]["filename"] = output_file.name
-            cleanup_file(output_file, delay=300)  # cleanup after 5 minutes
-        else:
+        # Collect everything that was written into the task subdirectory
+        downloaded_files = sorted(task_dir.glob("*"))
+        # Filter out any temp/partial files left by yt-dlp
+        downloaded_files = [f for f in downloaded_files if f.is_file() and not f.suffix in (".part", ".ytdl")]
+
+        if not downloaded_files:
             with tasks_lock:
                 tasks[task_id]["status"] = "error"
-                tasks[task_id]["error"] = "Output file not found after download"
+                tasks[task_id]["error"]  = "Output file not found after download"
+            shutil.rmtree(task_dir, ignore_errors=True)
+            return
+
+        if len(downloaded_files) > 1 or is_playlist:
+            # ── Playlist: package all files into a ZIP ───────────────────────
+            safe_title = sanitize_filename(playlist_title) if playlist_title else f"playlist_{task_id[:8]}"
+            zip_name   = f"{safe_title}.zip"
+            zip_path   = DOWNLOAD_DIR / zip_name
+
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for f in downloaded_files:
+                    zf.write(f, arcname=f.name)
+
+            # Cleanup the temp subdirectory now that zip is ready
+            shutil.rmtree(task_dir, ignore_errors=True)
+
+            with tasks_lock:
+                tasks[task_id]["status"]   = "done"
+                tasks[task_id]["progress"] = 100
+                tasks[task_id]["filename"] = zip_name
+
+            cleanup_path(zip_path, delay=300)
+
+        else:
+            # ── Single file: move out of subdirectory ────────────────────────
+            src  = downloaded_files[0]
+            dest = DOWNLOAD_DIR / f"{task_id}_{src.name}"
+            shutil.move(str(src), str(dest))
+            shutil.rmtree(task_dir, ignore_errors=True)
+
+            with tasks_lock:
+                tasks[task_id]["status"]   = "done"
+                tasks[task_id]["progress"] = 100
+                tasks[task_id]["filename"] = dest.name
+
+            cleanup_path(dest, delay=300)
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e).replace("ERROR: ", "")[:300]
         with tasks_lock:
             tasks[task_id]["status"] = "error"
-            tasks[task_id]["error"] = msg
+            tasks[task_id]["error"]  = msg
+        shutil.rmtree(task_dir, ignore_errors=True)
     except Exception as e:
         with tasks_lock:
             tasks[task_id]["status"] = "error"
-            tasks[task_id]["error"] = str(e)[:300]
+            tasks[task_id]["error"]  = str(e)[:300]
+        shutil.rmtree(task_dir, ignore_errors=True)
 
 
 @app.route("/api/progress/<task_id>")
@@ -286,10 +352,18 @@ def serve_file(task_id):
     if not file_path.exists():
         return jsonify({"error": "File has expired or been deleted"}), 410
 
+    # Playlist ZIPs are named "{PlaylistTitle}.zip" — no task_id prefix to strip.
+    # Single files are named "{task_id}_{original}" — strip the prefix.
+    fname = task["filename"]
+    if task.get("is_playlist") or fname.endswith(".zip"):
+        download_name = fname
+    else:
+        download_name = fname.split("_", 1)[-1]
+
     return send_file(
         file_path,
         as_attachment=True,
-        download_name=task["filename"].split("_", 1)[-1],  # strip task_id prefix
+        download_name=download_name,
     )
 
 

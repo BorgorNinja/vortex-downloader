@@ -1498,7 +1498,7 @@ body::after {
           <div class="save-stat-val" id="save-stat-quality">—</div>
         </div>
         <div class="save-stat">
-          <div class="save-stat-label">Duration</div>
+          <div class="save-stat-label" id="save-stat-duration-label">Duration</div>
           <div class="save-stat-val" id="save-stat-duration">—</div>
         </div>
         <div class="save-stat">
@@ -1740,7 +1740,7 @@ async function startDownload() {
     const res  = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, format: currentFormat, quality: currentQuality })
+      body: JSON.stringify({ url, format: currentFormat, quality: currentQuality, is_playlist: !!(currentInfo && currentInfo.is_playlist), playlist_title: (currentInfo && currentInfo.title) || '' })
     });
     const data = await res.json();
 
@@ -1970,17 +1970,29 @@ function showDone(taskId, task) {
   setTimeout(() => {
     hideSection('progress-section');
 
-    const displayName = (task.filename || '').replace(/^[0-9a-f-]+_/, '');
+    // Playlist ZIPs already have a clean name; single files have a task_id prefix to strip
+    const rawName = task.filename || '';
+    const displayName = rawName.endsWith('.zip')
+      ? rawName
+      : rawName.replace(/^[0-9a-f-]{8,}-[0-9a-f-]+_/, '');
     el('save-btn').href             = `/api/file/${taskId}`;
+    el('save-btn').setAttribute('download', displayName || 'download');
     el('save-filename').textContent = displayName || 'Ready to download';
 
     const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
     const m       = Math.floor(elapsed / 60).toString().padStart(2, '0');
     const s       = (elapsed % 60).toString().padStart(2, '0');
 
-    el('save-stat-format').textContent   = currentFormat.toUpperCase();
+    const isPlaylist = !!(currentInfo && currentInfo.is_playlist);
+    el('save-stat-format').textContent   = currentFormat.toUpperCase() + (isPlaylist ? ' ZIP' : '');
     el('save-stat-quality').textContent  = currentQuality === 'best' ? 'Best' : currentQuality;
-    el('save-stat-duration').textContent = (currentInfo && currentInfo.duration) || '—';
+    if (isPlaylist) {
+      el('save-stat-duration-label').textContent = 'Tracks';
+      el('save-stat-duration').textContent = currentInfo.count ? `${currentInfo.count}` : '—';
+    } else {
+      el('save-stat-duration-label').textContent = 'Duration';
+      el('save-stat-duration').textContent = (currentInfo && currentInfo.duration) || '—';
+    }
     el('save-stat-time').textContent     = elapsed < 60 ? `${elapsed}s` : `${m}:${s}`;
 
     showSection('save-section');
