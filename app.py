@@ -188,6 +188,10 @@ def start_download():
     quality = (data or {}).get("quality", "best")
     playlist_title = (data or {}).get("playlist_title", "").strip()
     is_playlist = bool((data or {}).get("is_playlist", False))
+    # List of individual video URLs the user selected (empty = whole playlist)
+    selected_urls = (data or {}).get("selected_urls", [])
+    if not isinstance(selected_urls, list):
+        selected_urls = []
 
     if not url or not is_youtube_url(url):
         return jsonify({"error": "Invalid URL"}), 400
@@ -210,7 +214,7 @@ def start_download():
 
     thread = threading.Thread(
         target=run_download,
-        args=(task_id, url, fmt, quality, is_playlist, playlist_title),
+        args=(task_id, url, fmt, quality, is_playlist, playlist_title, selected_urls),
         daemon=True
     )
     thread.start()
@@ -218,15 +222,24 @@ def start_download():
 
 
 def run_download(task_id: str, url: str, fmt: str, quality: str,
-                 is_playlist: bool = False, playlist_title: str = ""):
+                 is_playlist: bool = False, playlist_title: str = "",
+                 selected_urls: list = None):
     # Use a per-task subdirectory so concurrent downloads never collide
     task_dir = DOWNLOAD_DIR / task_id
     task_dir.mkdir(exist_ok=True)
     output_template = str(task_dir / "%(playlist_index)s - %(title)s.%(ext)s")
 
+    # Determine what URLs to actually pass to yt-dlp:
+    # - Partial selection → individual video URLs (avoids private-video index gaps)
+    # - Full playlist / single video → original URL
+    download_targets = selected_urls if selected_urls else [url]
+    # When downloading individual URLs from a playlist, still treat as playlist
+    # for zip-packaging purposes if there are multiple targets.
+    effective_playlist = is_playlist or (len(download_targets) > 1)
+
     # Track which track is currently downloading for the UI label
     current_index = [0]
-    total_count   = [0]
+    total_count   = [len(download_targets)]
 
     def progress_hook(d):
         with tasks_lock:
@@ -274,6 +287,8 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
             "progress_hooks": [progress_hook],
             "quiet": True,
             "no_warnings": True,
+            # Skip private / unavailable / geo-blocked entries instead of aborting
+            "ignoreerrors": True,
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
@@ -297,6 +312,8 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
             "progress_hooks": [progress_hook],
             "quiet": True,
             "no_warnings": True,
+            # Skip private / unavailable / geo-blocked entries instead of aborting
+            "ignoreerrors": True,
             "merge_output_format": "mp4",
             "postprocessors": [{
                 "key": "FFmpegVideoConvertor",
@@ -307,7 +324,7 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            ydl.download(download_targets)
 
         # Collect everything that was written into the task subdirectory
         downloaded_files = sorted(task_dir.glob("*"))
@@ -317,11 +334,11 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
         if not downloaded_files:
             with tasks_lock:
                 tasks[task_id]["status"] = "error"
-                tasks[task_id]["error"]  = "Output file not found after download"
+                tasks[task_id]["error"]  = "No downloadable files found — all entries may be private or unavailable"
             shutil.rmtree(task_dir, ignore_errors=True)
             return
 
-        if len(downloaded_files) > 1 or is_playlist:
+        if len(downloaded_files) > 1 or effective_playlist:
             # ── Playlist: package all files into a ZIP ───────────────────────
             safe_title = sanitize_filename(playlist_title) if playlist_title else f"playlist_{task_id[:8]}"
             zip_name   = f"{safe_title}.zip"
