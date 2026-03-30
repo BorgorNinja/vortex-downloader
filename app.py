@@ -41,20 +41,77 @@ def format_duration(seconds):
         return f"{h}:{m:02d}:{s:02d}"
     return f"{m}:{s:02d}"
 
-def cleanup_path(path: Path, delay: int = 120):
-    """Delete a file or directory tree after a delay."""
-    def _cleanup():
-        time.sleep(delay)
+FILE_TTL = 1800  # 30 minutes per file
+
+# Registry: { "/abs/path/to/file": created_at_float }
+# Each finished download (single file or playlist zip) gets its own entry.
+_file_registry: dict = {}
+_file_registry_lock = threading.Lock()
+
+
+def register_file(path: Path) -> None:
+    """Record a completed output file so the sweeper can expire it after FILE_TTL."""
+    with _file_registry_lock:
+        _file_registry[str(path)] = time.time()
+    print(f"[cleanup] Registered {path.name!r} — expires in {FILE_TTL // 60} min")
+
+
+def _cleanup_worker() -> None:
+    """
+    Background daemon thread.
+    Wakes every 60 s and deletes any registered file whose age >= FILE_TTL.
+    Also sweeps the downloads directory for orphaned files (e.g. after a
+    server restart) whose mtime is older than FILE_TTL.
+    """
+    while True:
+        time.sleep(60)
+        now = time.time()
+
+        # ── Expire registered files ──────────────────────────────────────────
+        expired_paths = []
+        with _file_registry_lock:
+            for fpath, created_at in list(_file_registry.items()):
+                if now - created_at >= FILE_TTL:
+                    expired_paths.append(fpath)
+            for fpath in expired_paths:
+                del _file_registry[fpath]
+
+        for fpath in expired_paths:
+            p = Path(fpath)
+            try:
+                if p.is_dir():
+                    shutil.rmtree(p, ignore_errors=True)
+                    print(f"[cleanup] TTL expired (dir):  {p.name}")
+                elif p.exists():
+                    p.unlink()
+                    print(f"[cleanup] TTL expired (file): {p.name}")
+            except Exception as exc:
+                print(f"[cleanup] Error deleting {fpath}: {exc}")
+
+        # ── Sweep orphaned files left on disk (server restarts, etc.) ────────
         try:
-            if path.is_dir():
-                shutil.rmtree(path, ignore_errors=True)
-                print(f"[cleanup] Deleted dir {path.name}")
-            elif path.exists():
-                path.unlink()
-                print(f"[cleanup] Deleted {path.name}")
-        except Exception as e:
-            print(f"[cleanup] Error: {e}")
-    threading.Thread(target=_cleanup, daemon=True).start()
+            for item in DOWNLOAD_DIR.iterdir():
+                if not item.is_file():
+                    continue
+                if item.suffix in (".part", ".ytdl"):
+                    continue
+                age = now - item.stat().st_mtime
+                if age >= FILE_TTL:
+                    # Remove from registry too if it somehow ended up there
+                    with _file_registry_lock:
+                        _file_registry.pop(str(item), None)
+                    try:
+                        item.unlink()
+                        print(f"[cleanup] Orphan swept:        {item.name}")
+                    except Exception as exc:
+                        print(f"[cleanup] Error sweeping {item.name}: {exc}")
+        except Exception as exc:
+            print(f"[cleanup] Directory sweep error: {exc}")
+
+
+# Start the sweeper once at import time (daemon=True means it never blocks shutdown)
+threading.Thread(target=_cleanup_worker, name="cleanup-sweeper", daemon=True).start()
+
 
 def sanitize_filename(name: str) -> str:
     """Strip characters that are unsafe in filenames/zip names."""
@@ -282,7 +339,7 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
                 tasks[task_id]["progress"] = 100
                 tasks[task_id]["filename"] = zip_name
 
-            cleanup_path(zip_path, delay=300)
+            register_file(zip_path)
 
         else:
             # ── Single file: move out of subdirectory ────────────────────────
@@ -296,7 +353,7 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
                 tasks[task_id]["progress"] = 100
                 tasks[task_id]["filename"] = dest.name
 
-            cleanup_path(dest, delay=300)
+            register_file(dest)
 
     except yt_dlp.utils.DownloadError as e:
         msg = str(e).replace("ERROR: ", "")[:300]
