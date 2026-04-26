@@ -1357,8 +1357,11 @@ body::after {
       <div class="option-group">
         <div class="option-group-label">Format</div>
         <div class="toggle-group" id="format-group">
-          <button class="toggle-btn active" data-format="mp4" onclick="selectFormat('mp4')">MP4</button>
-          <button class="toggle-btn" data-format="mp3" onclick="selectFormat('mp3')">MP3</button>
+          <button class="toggle-btn active" data-format="mp4"  onclick="selectFormat('mp4')">MP4</button>
+          <button class="toggle-btn"        data-format="mp3"  onclick="selectFormat('mp3')">MP3</button>
+          <button class="toggle-btn"        data-format="m4a"  onclick="selectFormat('m4a')">M4A</button>
+          <button class="toggle-btn"        data-format="flac" onclick="selectFormat('flac')">FLAC</button>
+          <button class="toggle-btn"        data-format="ogg"  onclick="selectFormat('ogg')">OGG</button>
         </div>
       </div>
 
@@ -1367,6 +1370,35 @@ body::after {
         <div class="toggle-group" id="quality-btns">
           <!-- filled by JS -->
         </div>
+      </div>
+
+      <div class="option-group" id="subtitle-group" style="display:none;">
+        <div class="option-group-label">Subtitles</div>
+        <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">Off</button>
+      </div>
+    </div>
+
+    <!-- Clip / Trim -->
+    <div style="margin-top:20px;">
+      <div class="section-label">02b — Clip (optional)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">Start (sec)</label>
+          <input type="number" id="clip-start" min="0" step="1" placeholder="e.g. 30"
+            style="width:110px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
+                   color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;
+                   transition:border-color .2s;caret-color:var(--accent);"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">End (sec)</label>
+          <input type="number" id="clip-end" min="0" step="1" placeholder="e.g. 90"
+            style="width:110px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
+                   color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;
+                   transition:border-color .2s;caret-color:var(--accent);"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"/>
+        </div>
+        <div style="padding-top:18px;font-family:var(--mono);font-size:10px;color:var(--text3);">Leave blank to download full video</div>
       </div>
     </div>
   </div>
@@ -1524,6 +1556,15 @@ body::after {
         </div>
         <span class="status-text-main" id="status-text-main">Queued</span>
         <span class="status-elapsed-label" id="status-elapsed-label">00:00</span>
+        <button id="cancel-btn" onclick="cancelDownload()"
+          style="margin-left:12px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+                 text-transform:uppercase;padding:4px 12px;border:1px solid var(--border2);
+                 border-radius:var(--radius);background:transparent;color:var(--text3);
+                 cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+          Cancel
+        </button>
       </div>
 
     </div><!-- /progress-shell -->
@@ -1592,17 +1633,20 @@ body::after {
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let currentFormat  = 'mp4';
-let currentQuality = '720p';
-let currentInfo    = null;
-let currentTaskId  = null;
-let sseSource      = null;
-let startTime      = null;
-let elapsedTimer   = null;
+let currentFormat    = 'mp4';
+let currentQuality   = '720p';
+let currentInfo      = null;
+let currentTaskId    = null;
+let sseSource        = null;
+let startTime        = null;
+let elapsedTimer     = null;
+let subtitlesEnabled = false;
+let queuePollTimer   = null;
 
-const MP4_QUALITIES = ['360p', '480p', '720p', '1080p', 'best'];
-const MP3_QUALITIES = ['128k', '192k', '320k'];
-const SEGMENTS      = 24;
+const MP4_QUALITIES   = ['360p', '480p', '720p', '1080p', 'best'];
+const MP3_QUALITIES   = ['128k', '192k', '320k'];
+const AUDIO_FORMATS   = new Set(['mp3', 'm4a', 'flac', 'ogg']);
+const SEGMENTS        = 24;
 
 // Pre-generate random heights for segment bars (stable, not re-randomised each tick)
 const segHeights = Array.from({ length: SEGMENTS }, () => 8 + Math.floor(Math.random() * 36));
@@ -1611,6 +1655,8 @@ const segHeights = Array.from({ length: SEGMENTS }, () => 8 + Math.floor(Math.ra
 document.addEventListener('DOMContentLoaded', () => {
   setQualityButtons(MP4_QUALITIES, '720p');
   buildSegmentBars();
+  requestNotifPermission();
+  startQueuePoll();
 
   document.getElementById('url-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') fetchInfo();
@@ -1650,17 +1696,29 @@ function selectFormat(fmt) {
   document.querySelectorAll('#format-group .toggle-btn').forEach(b => {
     b.classList.remove('active', 'active-mp3');
     if (b.dataset.format === fmt)
-      b.classList.add(fmt === 'mp3' ? 'active-mp3' : 'active');
+      b.classList.add(AUDIO_FORMATS.has(fmt) ? 'active-mp3' : 'active');
   });
 
   if (fmt === 'mp4') {
     setQualityButtons(MP4_QUALITIES, '720p');
     currentQuality = '720p';
+    el('subtitle-group').style.display = '';
   } else {
     setQualityButtons(MP3_QUALITIES, '192k');
     currentQuality = '192k';
+    el('subtitle-group').style.display = 'none';
+    subtitlesEnabled = false;
+    const sbtn = el('subtitle-btn');
+    if (sbtn) { sbtn.textContent = 'Off'; sbtn.classList.remove('active'); }
   }
   updateFormatLabel();
+}
+
+function toggleSubtitles() {
+  subtitlesEnabled = !subtitlesEnabled;
+  const btn = el('subtitle-btn');
+  btn.textContent = subtitlesEnabled ? 'On' : 'Off';
+  btn.classList.toggle('active', subtitlesEnabled);
 }
 
 function setQualityButtons(qualities, defaultQ) {
@@ -1863,16 +1921,22 @@ async function startDownload() {
   btn.innerHTML = '<span class="spinner"></span> Starting...';
 
   try {
+    const clipStart = el('clip-start') ? el('clip-start').value.trim() : '';
+    const clipEnd   = el('clip-end')   ? el('clip-end').value.trim()   : '';
+
     const res  = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url,
-        format: currentFormat,
-        quality: currentQuality,
-        is_playlist: !!(currentInfo && currentInfo.is_playlist),
+        format:         currentFormat,
+        quality:        currentQuality,
+        is_playlist:    !!(currentInfo && currentInfo.is_playlist),
         playlist_title: (currentInfo && currentInfo.title) || '',
-        selected_urls: getSelectedUrls(),
+        selected_urls:  getSelectedUrls(),
+        subtitles:      subtitlesEnabled,
+        start_time:     clipStart !== '' ? Number(clipStart) : undefined,
+        end_time:       clipEnd   !== '' ? Number(clipEnd)   : undefined,
       })
     });
     const data = await res.json();
@@ -1936,6 +2000,7 @@ function subscribeProgress(taskId) {
     if (task.status === 'done') {
       sseSource.close();
       showDone(taskId, task);
+      fireNotification('VORTEX — Download Complete', task.title || 'Your file is ready to save.');
     } else if (task.status === 'error') {
       sseSource.close();
       showError(task.error || 'Download failed.');
@@ -2216,6 +2281,90 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ── Cancel download ───────────────────────────────────────────────────────
+async function cancelDownload() {
+  if (!currentTaskId) return;
+  try {
+    await fetch(`/api/cancel/${currentTaskId}`, { method: 'POST' });
+  } catch (_) {}
+}
+
+// ── Queue / active downloads display ──────────────────────────────────────
+function startQueuePoll() {
+  stopQueuePoll();
+  queuePollTimer = setInterval(refreshQueue, 2000);
+  refreshQueue();
+}
+
+function stopQueuePoll() {
+  if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
+}
+
+async function refreshQueue() {
+  try {
+    const res   = await fetch('/api/tasks');
+    const tasks = await res.json();
+    renderQueue(tasks);
+  } catch (_) {}
+}
+
+function renderQueue(tasks) {
+  let panel = el('queue-panel');
+  const entries = Object.entries(tasks).filter(([id]) => id !== currentTaskId);
+  if (!entries.length) {
+    if (panel) panel.style.display = 'none';
+    return;
+  }
+
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'queue-panel';
+    panel.style.cssText = 'margin-top:20px;';
+    const container = document.querySelector('.container');
+    const footer    = document.querySelector('.footer');
+    container.insertBefore(panel, footer || null);
+  }
+
+  const rows = entries.map(([id, t]) => {
+    const statusColor = {
+      queued: 'var(--text3)', downloading: 'var(--accent)',
+      processing: 'var(--accent3)', done: 'var(--success)', error: 'var(--accent)'
+    }[t.status] || 'var(--text2)';
+    const pct = Math.round(t.progress || 0);
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 16px;
+                  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;">
+        <span style="color:${statusColor};text-transform:uppercase;letter-spacing:.08em;
+                     flex-shrink:0;min-width:80px;">${t.status}</span>
+        <span style="color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${escHtml(t.title || t.format?.toUpperCase() || 'Download')}
+        </span>
+        <span style="color:var(--text3);flex-shrink:0;">${pct}%</span>
+      </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="section-label">Active Queue</div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
+      ${rows}
+    </div>`;
+  panel.style.display = '';
+}
+
+// ── Browser notifications ──────────────────────────────────────────────────
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function fireNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '' });
+  } catch (_) {}
 }
 
 // ── Icon SVGs ──────────────────────────────────────────────────────────────

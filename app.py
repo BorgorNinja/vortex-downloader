@@ -12,14 +12,33 @@ from flask_cors import CORS
 import yt_dlp
 
 app = Flask(__name__)
-CORS(app)
+
+# ── Security: restrict CORS to local origins only ────────────────────────────
+_ALLOWED_ORIGINS = os.getenv(
+    "VORTEX_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000"
+).split(",")
+CORS(app, origins=_ALLOWED_ORIGINS)
 
 DOWNLOAD_DIR = Path(__file__).parent / "downloads"
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
-# In-memory task store
-tasks = {}
+# ── Config (all overridable via env vars) ────────────────────────────────────
+MAX_CONCURRENT = int(os.getenv("VORTEX_MAX_CONCURRENT", "3"))
+FILE_TTL       = int(os.getenv("VORTEX_FILE_TTL",       "1800"))  # 30 min
+SSE_TIMEOUT    = int(os.getenv("VORTEX_SSE_TIMEOUT",    "300"))   # 5 min
+COOKIE_FILE    = os.getenv("VORTEX_COOKIE_FILE", "")
+MAX_URL_LENGTH = 2048
+
+# ── Concurrency limiter ──────────────────────────────────────────────────────
+_download_sem = threading.Semaphore(MAX_CONCURRENT)
+
+# ── In-memory task store ─────────────────────────────────────────────────────
+tasks      = {}
 tasks_lock = threading.Lock()
+
+# ── Cancel events ────────────────────────────────────────────────────────────
+_cancel_events: dict = {}
+_cancel_lock = threading.Lock()
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -41,16 +60,12 @@ def format_duration(seconds):
         return f"{h}:{m:02d}:{s:02d}"
     return f"{m}:{s:02d}"
 
-FILE_TTL = 1800  # 30 minutes per file
-
 # Registry: { "/abs/path/to/file": created_at_float }
-# Each finished download (single file or playlist zip) gets its own entry.
 _file_registry: dict = {}
 _file_registry_lock = threading.Lock()
 
 
 def register_file(path: Path) -> None:
-    """Record a completed output file so the sweeper can expire it after FILE_TTL."""
     with _file_registry_lock:
         _file_registry[str(path)] = time.time()
     print(f"[cleanup] Registered {path.name!r} — expires in {FILE_TTL // 60} min")
@@ -58,10 +73,10 @@ def register_file(path: Path) -> None:
 
 def _cleanup_worker() -> None:
     """
-    Background daemon thread.
-    Wakes every 60 s and deletes any registered file whose age >= FILE_TTL.
-    Also sweeps the downloads directory for orphaned files (e.g. after a
-    server restart) whose mtime is older than FILE_TTL.
+    Background daemon.  Every 60 s:
+      1. Deletes registered files whose age >= FILE_TTL
+      2. Sweeps orphaned files AND subdirectories from downloads/
+      3. Prunes finished task entries from memory
     """
     while True:
         time.sleep(60)
@@ -88,16 +103,23 @@ def _cleanup_worker() -> None:
             except Exception as exc:
                 print(f"[cleanup] Error deleting {fpath}: {exc}")
 
-        # ── Sweep orphaned files left on disk (server restarts, etc.) ────────
+        # ── Sweep orphaned files and subdirectories ──────────────────────────
         try:
             for item in DOWNLOAD_DIR.iterdir():
-                if not item.is_file():
-                    continue
-                if item.suffix in (".part", ".ytdl"):
-                    continue
                 age = now - item.stat().st_mtime
-                if age >= FILE_TTL:
-                    # Remove from registry too if it somehow ended up there
+                if age < FILE_TTL:
+                    continue
+                if item.is_dir():
+                    with _file_registry_lock:
+                        _file_registry.pop(str(item), None)
+                    try:
+                        shutil.rmtree(item, ignore_errors=True)
+                        print(f"[cleanup] Orphan dir swept:    {item.name}")
+                    except Exception as exc:
+                        print(f"[cleanup] Error sweeping dir {item.name}: {exc}")
+                elif item.is_file():
+                    if item.suffix in (".part", ".ytdl"):
+                        continue
                     with _file_registry_lock:
                         _file_registry.pop(str(item), None)
                     try:
@@ -108,13 +130,24 @@ def _cleanup_worker() -> None:
         except Exception as exc:
             print(f"[cleanup] Directory sweep error: {exc}")
 
+        # ── Prune finished tasks from memory ─────────────────────────────────
+        prune_cutoff = now - (FILE_TTL * 2)
+        with tasks_lock:
+            stale = [
+                tid for tid, t in tasks.items()
+                if t.get("status") in ("done", "error")
+                and (t.get("_finished_at") or now) < prune_cutoff
+            ]
+            for tid in stale:
+                del tasks[tid]
+        if stale:
+            print(f"[cleanup] Pruned {len(stale)} finished task(s) from memory")
 
-# Start the sweeper once at import time (daemon=True means it never blocks shutdown)
+
 threading.Thread(target=_cleanup_worker, name="cleanup-sweeper", daemon=True).start()
 
 
 def sanitize_filename(name: str) -> str:
-    """Strip characters that are unsafe in filenames/zip names."""
     return re.sub(r'[\/*?:"<>|]', "_", name).strip().rstrip(".")[:200] or "playlist"
 
 # ─── Routes ─────────────────────────────────────────────────────────────────
@@ -123,13 +156,16 @@ def sanitize_filename(name: str) -> str:
 def index():
     return render_template("index.html")
 
+
 @app.route("/api/info", methods=["POST"])
 def get_info():
     data = request.get_json()
-    url = (data or {}).get("url", "").strip()
+    url  = (data or {}).get("url", "").strip()
 
     if not url:
         return jsonify({"error": "No URL provided"}), 400
+    if len(url) > MAX_URL_LENGTH:
+        return jsonify({"error": "URL too long"}), 400
     if not is_youtube_url(url):
         return jsonify({"error": "Only YouTube URLs are supported"}), 400
 
@@ -139,6 +175,8 @@ def get_info():
         "extract_flat": "in_playlist",
         "skip_download": True,
     }
+    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
+        ydl_opts["cookiefile"] = COOKIE_FILE
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -159,7 +197,7 @@ def get_info():
                         "duration": format_duration(e.get("duration")),
                         "url": e.get("url") or f"https://www.youtube.com/watch?v={e.get('id')}",
                     }
-                    for i, e in enumerate(entries[:50])  # cap at 50 for display
+                    for i, e in enumerate(entries[:50])
                 ],
             })
         else:
@@ -180,42 +218,71 @@ def get_info():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+VALID_FORMATS = {"mp3", "mp4", "m4a", "flac", "ogg"}
+
 @app.route("/api/download", methods=["POST"])
 def start_download():
-    data = request.get_json()
-    url = (data or {}).get("url", "").strip()
-    fmt = (data or {}).get("format", "mp4").lower()
-    quality = (data or {}).get("quality", "best")
+    data           = request.get_json()
+    url            = (data or {}).get("url", "").strip()
+    fmt            = (data or {}).get("format", "mp4").lower()
+    quality        = (data or {}).get("quality", "best")
     playlist_title = (data or {}).get("playlist_title", "").strip()
-    is_playlist = bool((data or {}).get("is_playlist", False))
-    # List of individual video URLs the user selected (empty = whole playlist)
-    selected_urls = (data or {}).get("selected_urls", [])
+    is_playlist    = bool((data or {}).get("is_playlist", False))
+    selected_urls  = (data or {}).get("selected_urls", [])
     if not isinstance(selected_urls, list):
         selected_urls = []
 
-    if not url or not is_youtube_url(url):
+    # Feature params
+    start_time_raw = str((data or {}).get("start_time", "")).strip()
+    end_time_raw   = str((data or {}).get("end_time",   "")).strip()
+    subtitles      = bool((data or {}).get("subtitles", False))
+
+    if not url or len(url) > MAX_URL_LENGTH or not is_youtube_url(url):
         return jsonify({"error": "Invalid URL"}), 400
-    if fmt not in ("mp3", "mp4"):
-        return jsonify({"error": "Format must be mp3 or mp4"}), 400
+    if fmt not in VALID_FORMATS:
+        return jsonify({"error": f"Format must be one of: {', '.join(sorted(VALID_FORMATS))}"}), 400
+
+    def _parse_time(raw):
+        if not raw:
+            return None
+        try:
+            v = float(raw)
+            if v < 0:
+                raise ValueError()
+            return v
+        except ValueError:
+            return False
+
+    ts = _parse_time(start_time_raw)
+    te = _parse_time(end_time_raw)
+    if ts is False or te is False:
+        return jsonify({"error": "start_time / end_time must be non-negative numbers (seconds)"}), 400
+    if ts is not None and te is not None and ts >= te:
+        return jsonify({"error": "start_time must be less than end_time"}), 400
 
     task_id = str(uuid.uuid4())
     with tasks_lock:
         tasks[task_id] = {
-            "status": "queued",
-            "progress": 0,
-            "speed": "",
-            "eta": "",
-            "filename": None,
-            "title": "",
-            "error": None,
-            "format": fmt,
-            "is_playlist": is_playlist,
+            "status":       "queued",
+            "progress":     0,
+            "speed":        "",
+            "eta":          "",
+            "filename":     None,
+            "title":        "",
+            "error":        None,
+            "format":       fmt,
+            "is_playlist":  is_playlist,
+            "_finished_at": None,
         }
+
+    with _cancel_lock:
+        _cancel_events[task_id] = threading.Event()
 
     thread = threading.Thread(
         target=run_download,
-        args=(task_id, url, fmt, quality, is_playlist, playlist_title, selected_urls),
-        daemon=True
+        args=(task_id, url, fmt, quality, is_playlist, playlist_title,
+              selected_urls, ts, te, subtitles),
+        daemon=True,
     )
     thread.start()
     return jsonify({"task_id": task_id})
@@ -223,25 +290,40 @@ def start_download():
 
 def run_download(task_id: str, url: str, fmt: str, quality: str,
                  is_playlist: bool = False, playlist_title: str = "",
-                 selected_urls: list = None):
-    # Use a per-task subdirectory so concurrent downloads never collide
-    task_dir = DOWNLOAD_DIR / task_id
+                 selected_urls: list = None,
+                 start_time: float = None, end_time: float = None,
+                 subtitles: bool = False):
+    _download_sem.acquire()
+    try:
+        _run_download_inner(
+            task_id, url, fmt, quality, is_playlist, playlist_title,
+            selected_urls or [], start_time, end_time, subtitles,
+        )
+    finally:
+        _download_sem.release()
+        with _cancel_lock:
+            _cancel_events.pop(task_id, None)
+
+
+def _run_download_inner(task_id: str, url: str, fmt: str, quality: str,
+                        is_playlist: bool, playlist_title: str,
+                        selected_urls: list, start_time, end_time, subtitles: bool):
+    task_dir        = DOWNLOAD_DIR / task_id
     task_dir.mkdir(exist_ok=True)
     output_template = str(task_dir / "%(playlist_index)s - %(title)s.%(ext)s")
 
-    # Determine what URLs to actually pass to yt-dlp:
-    # - Partial selection → individual video URLs (avoids private-video index gaps)
-    # - Full playlist / single video → original URL
-    download_targets = selected_urls if selected_urls else [url]
-    # When downloading individual URLs from a playlist, still treat as playlist
-    # for zip-packaging purposes if there are multiple targets.
+    download_targets   = selected_urls if selected_urls else [url]
     effective_playlist = is_playlist or (len(download_targets) > 1)
 
-    # Track which track is currently downloading for the UI label
     current_index = [0]
     total_count   = [len(download_targets)]
 
+    cancel_ev = _cancel_events.get(task_id)
+
     def progress_hook(d):
+        if cancel_ev and cancel_ev.is_set():
+            raise Exception("Download cancelled by user")
+
         with tasks_lock:
             task = tasks.get(task_id)
             if not task:
@@ -258,7 +340,6 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
                 idx  = info.get("playlist_index") or info.get("playlist_autonumber") or current_index[0]
                 n    = info.get("playlist_count") or total_count[0] or 1
 
-                # For playlists: scale per-track 0-100 into overall progress
                 if is_playlist and n > 1:
                     overall = ((idx - 1) * 100 + pct) / n
                     task["progress"] = round(overall, 1)
@@ -277,26 +358,56 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
                 task["status"]   = "processing"
                 task["progress"] = 99
 
-    if fmt == "mp3":
-        quality_map = {"128k": "5", "192k": "2", "320k": "0"}
-        audio_quality = quality_map.get(quality, "2")
+    # ── Build ydl_opts ───────────────────────────────────────────────────────
+
+    AUDIO_QUALITY_MAP = {"128k": "5", "192k": "2", "320k": "0"}
+
+    common_opts = {
+        "outtmpl":        output_template,
+        "progress_hooks": [progress_hook],
+        "quiet":          True,
+        "no_warnings":    True,
+        "ignoreerrors":   True,
+        "prefer_ffmpeg":  True,
+    }
+
+    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
+        common_opts["cookiefile"] = COOKIE_FILE
+
+    if start_time is not None or end_time is not None:
+        range_start = start_time if start_time is not None else 0
+        range_end   = end_time   if end_time   is not None else float("inf")
+        common_opts["download_ranges"]         = yt_dlp.utils.download_range_func(
+            None, [(range_start, range_end)]
+        )
+        common_opts["force_keyframes_at_cuts"] = True
+
+    is_audio = fmt in ("mp3", "m4a", "flac", "ogg")
+
+    if is_audio:
+        aq = AUDIO_QUALITY_MAP.get(quality, "2")
+        if fmt == "mp3":
+            pp = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3",    "preferredquality": aq}]
+        elif fmt == "m4a":
+            pp = [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a",    "preferredquality": aq}]
+        elif fmt == "flac":
+            pp = [{"key": "FFmpegExtractAudio", "preferredcodec": "flac"}]
+        else:  # ogg
+            pp = [{"key": "FFmpegExtractAudio", "preferredcodec": "vorbis", "preferredquality": aq}]
+
+        pp += [
+            {"key": "FFmpegMetadata", "add_metadata": True},
+            {"key": "EmbedThumbnail"},
+        ]
 
         ydl_opts = {
-            "format": "bestaudio/best",
-            "outtmpl": output_template,
-            "progress_hooks": [progress_hook],
-            "quiet": True,
-            "no_warnings": True,
-            # Skip private / unavailable / geo-blocked entries instead of aborting
-            "ignoreerrors": True,
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": audio_quality,
-            }],
-            "prefer_ffmpeg": True,
+            **common_opts,
+            "format":         "bestaudio/best",
+            "writethumbnail": True,
+            "postprocessors": pp,
         }
-    else:
+
+    else:  # mp4
         quality_map = {
             "360p":  "bestvideo[height<=360]+bestaudio/best[height<=360]",
             "480p":  "bestvideo[height<=480]+bestaudio/best[height<=480]",
@@ -306,40 +417,45 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
         }
         fmt_str = quality_map.get(quality, "bestvideo+bestaudio/best")
 
+        pp = [
+            {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"},
+            {"key": "FFmpegMetadata",        "add_metadata": True},
+        ]
+        if subtitles:
+            pp.append({"key": "FFmpegEmbedSubtitle", "already_have_subtitle": False})
+
         ydl_opts = {
-            "format": fmt_str,
-            "outtmpl": output_template,
-            "progress_hooks": [progress_hook],
-            "quiet": True,
-            "no_warnings": True,
-            # Skip private / unavailable / geo-blocked entries instead of aborting
-            "ignoreerrors": True,
+            **common_opts,
+            "format":              fmt_str,
             "merge_output_format": "mp4",
-            "postprocessors": [{
-                "key": "FFmpegVideoConvertor",
-                "preferedformat": "mp4",
-            }],
-            "prefer_ffmpeg": True,
+            "postprocessors":      pp,
         }
+        if subtitles:
+            ydl_opts.update({
+                "writesubtitles":    True,
+                "writeautomaticsub": True,
+                "subtitleslangs":    ["en", "en-orig"],
+            })
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download(download_targets)
 
-        # Collect everything that was written into the task subdirectory
         downloaded_files = sorted(task_dir.glob("*"))
-        # Filter out any temp/partial files left by yt-dlp
-        downloaded_files = [f for f in downloaded_files if f.is_file() and not f.suffix in (".part", ".ytdl")]
+        downloaded_files = [
+            f for f in downloaded_files
+            if f.is_file() and f.suffix not in (".part", ".ytdl")
+        ]
 
         if not downloaded_files:
             with tasks_lock:
-                tasks[task_id]["status"] = "error"
-                tasks[task_id]["error"]  = "No downloadable files found — all entries may be private or unavailable"
+                tasks[task_id]["status"]       = "error"
+                tasks[task_id]["error"]        = "No files downloaded — entries may be private or unavailable"
+                tasks[task_id]["_finished_at"] = time.time()
             shutil.rmtree(task_dir, ignore_errors=True)
             return
 
         if len(downloaded_files) > 1 or effective_playlist:
-            # ── Playlist: package all files into a ZIP ───────────────────────
             safe_title = sanitize_filename(playlist_title) if playlist_title else f"playlist_{task_id[:8]}"
             zip_name   = f"{safe_title}.zip"
             zip_path   = DOWNLOAD_DIR / zip_name
@@ -348,47 +464,49 @@ def run_download(task_id: str, url: str, fmt: str, quality: str,
                 for f in downloaded_files:
                     zf.write(f, arcname=f.name)
 
-            # Cleanup the temp subdirectory now that zip is ready
             shutil.rmtree(task_dir, ignore_errors=True)
 
             with tasks_lock:
-                tasks[task_id]["status"]   = "done"
-                tasks[task_id]["progress"] = 100
-                tasks[task_id]["filename"] = zip_name
+                tasks[task_id]["status"]       = "done"
+                tasks[task_id]["progress"]     = 100
+                tasks[task_id]["filename"]     = zip_name
+                tasks[task_id]["_finished_at"] = time.time()
 
             register_file(zip_path)
 
         else:
-            # ── Single file: move out of subdirectory ────────────────────────
             src  = downloaded_files[0]
             dest = DOWNLOAD_DIR / f"{task_id}_{src.name}"
             shutil.move(str(src), str(dest))
             shutil.rmtree(task_dir, ignore_errors=True)
 
             with tasks_lock:
-                tasks[task_id]["status"]   = "done"
-                tasks[task_id]["progress"] = 100
-                tasks[task_id]["filename"] = dest.name
+                tasks[task_id]["status"]       = "done"
+                tasks[task_id]["progress"]     = 100
+                tasks[task_id]["filename"]     = dest.name
+                tasks[task_id]["_finished_at"] = time.time()
 
             register_file(dest)
 
-    except yt_dlp.utils.DownloadError as e:
-        msg = str(e).replace("ERROR: ", "")[:300]
-        with tasks_lock:
-            tasks[task_id]["status"] = "error"
-            tasks[task_id]["error"]  = msg
-        shutil.rmtree(task_dir, ignore_errors=True)
     except Exception as e:
+        msg          = str(e).replace("ERROR: ", "")[:300]
+        is_cancelled = "cancelled by user" in msg.lower()
         with tasks_lock:
-            tasks[task_id]["status"] = "error"
-            tasks[task_id]["error"]  = str(e)[:300]
+            tasks[task_id]["status"]       = "error"
+            tasks[task_id]["error"]        = "Cancelled" if is_cancelled else msg
+            tasks[task_id]["_finished_at"] = time.time()
         shutil.rmtree(task_dir, ignore_errors=True)
 
 
 @app.route("/api/progress/<task_id>")
 def sse_progress(task_id):
     def generate():
+        deadline = time.time() + SSE_TIMEOUT
         while True:
+            if time.time() > deadline:
+                yield f"data: {json.dumps({'status': 'error', 'error': 'Stream timeout'})}\n\n"
+                break
+
             with tasks_lock:
                 task = tasks.get(task_id)
 
@@ -396,7 +514,7 @@ def sse_progress(task_id):
                 yield f"data: {json.dumps({'status': 'error', 'error': 'Task not found'})}\n\n"
                 break
 
-            yield f"data: {json.dumps(task)}\n\n"
+            yield f"data: {json.dumps({k: v for k, v in task.items() if not k.startswith('_')})}\n\n"
 
             if task["status"] in ("done", "error"):
                 break
@@ -407,11 +525,34 @@ def sse_progress(task_id):
         generate(),
         mimetype="text/event-stream",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control":     "no-cache",
             "X-Accel-Buffering": "no",
-            "Connection": "keep-alive",
+            "Connection":        "keep-alive",
         },
     )
+
+
+@app.route("/api/cancel/<task_id>", methods=["POST"])
+def cancel_task(task_id):
+    with _cancel_lock:
+        ev = _cancel_events.get(task_id)
+    if ev:
+        ev.set()
+        return jsonify({"ok": True})
+    with tasks_lock:
+        if task_id not in tasks:
+            return jsonify({"error": "Task not found"}), 404
+    return jsonify({"ok": True, "note": "Task already finished"})
+
+
+@app.route("/api/tasks")
+def list_tasks():
+    with tasks_lock:
+        result = {
+            tid: {k: v for k, v in t.items() if not k.startswith("_")}
+            for tid, t in tasks.items()
+        }
+    return jsonify(result)
 
 
 @app.route("/api/file/<task_id>")
@@ -426,19 +567,13 @@ def serve_file(task_id):
     if not file_path.exists():
         return jsonify({"error": "File has expired or been deleted"}), 410
 
-    # Playlist ZIPs are named "{PlaylistTitle}.zip" — no task_id prefix to strip.
-    # Single files are named "{task_id}_{original}" — strip the prefix.
     fname = task["filename"]
     if task.get("is_playlist") or fname.endswith(".zip"):
         download_name = fname
     else:
         download_name = fname.split("_", 1)[-1]
 
-    return send_file(
-        file_path,
-        as_attachment=True,
-        download_name=download_name,
-    )
+    return send_file(file_path, as_attachment=True, download_name=download_name)
 
 
 @app.route("/api/status/<task_id>")
@@ -447,11 +582,16 @@ def task_status(task_id):
         task = tasks.get(task_id)
     if not task:
         return jsonify({"error": "Not found"}), 404
-    return jsonify(task)
+    return jsonify({k: v for k, v in task.items() if not k.startswith("_")})
 
 
 if __name__ == "__main__":
+    debug_mode = os.getenv("VORTEX_DEBUG", "0").lower() in ("1", "true", "yes")
     print("─" * 50)
-    print("  YT Downloader running at http://localhost:5000")
+    print("  VORTEX Downloader  →  http://localhost:5000")
+    print(f"  Concurrency cap    →  {MAX_CONCURRENT} simultaneous downloads")
+    print(f"  File TTL           →  {FILE_TTL // 60} minutes")
+    if debug_mode:
+        print("  [WARN] Debug mode ON — disable in production")
     print("─" * 50)
-    app.run(debug=True, host="0.0.0.0", port=5000, threaded=True)
+    app.run(debug=debug_mode, host="0.0.0.0", port=5000, threaded=True)
