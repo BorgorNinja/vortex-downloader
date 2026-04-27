@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cookie Guide — VORTEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Azeret+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #080808;
+  --bg2:     #0e0e0e;
+  --bg3:     #141414;
+  --bg4:     #1a1a1a;
+  --border:  #1e1e1e;
+  --border2: #2a2a2a;
+  --accent:  #ff2525;
+  --accent2: #ff6b2d;
+  --accent3: #ffae00;
+  --text:    #e2e2e2;
+  --text2:   #888;
+  --text3:   #444;
+  --success: #00e676;
+  --mono:    'Azeret Mono', monospace;
+  --sans:    'Barlow', sans-serif;
+  --display: 'Bebas Neue', sans-serif;
+  --radius:  4px;
+}
+
+[data-theme="light"] {
+  --bg:      #f4f4f4;
+  --bg2:     #ffffff;
+  --bg3:     #ebebeb;
+  --bg4:     #e0e0e0;
+  --border:  #d4d4d4;
+  --border2: #c0c0c0;
+  --text:    #111111;
+  --text2:   #555;
+  --text3:   #999;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.6;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none; z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ── Header ── */
+.header {
+  padding: 48px 0 36px;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 7px 14px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  transition: all .15s;
+  margin-bottom: 6px;
+}
+.back-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.page-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .25em;
+  color: var(--accent3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  font-family: var(--display);
+  font-size: clamp(38px, 7vw, 68px);
+  line-height: .9;
+  letter-spacing: .02em;
+  background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-title span {
+  background: linear-gradient(135deg, var(--accent3) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent3) 0%, var(--border) 40%, transparent 100%);
+  margin-bottom: 40px;
+}
+
+/* ── Intro ── */
+.intro {
+  background: rgba(255,174,0,0.06);
+  border: 1px solid rgba(255,174,0,0.2);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 36px;
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+.intro strong { color: var(--accent3); }
+
+/* ── Step ── */
+.step {
+  margin-bottom: 32px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp .5s ease forwards;
+}
+.step:nth-child(1) { animation-delay: .05s; }
+.step:nth-child(2) { animation-delay: .12s; }
+.step:nth-child(3) { animation-delay: .19s; }
+.step:nth-child(4) { animation-delay: .26s; }
+.step:nth-child(5) { animation-delay: .33s; }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.step-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255,37,37,0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.step-body {
+  padding-left: 46px;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.step-body p { margin-bottom: 10px; }
+.step-body p:last-child { margin-bottom: 0; }
+
+.step-body strong { color: var(--text); }
+
+/* ── Sub-steps ── */
+.substeps {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.substep {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.substep-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.substep-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.substep-text strong { color: var(--text); }
+
+/* ── Callout / tip ── */
+.tip {
+  background: rgba(0,230,118,0.05);
+  border: 1px solid rgba(0,230,118,0.2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--success);
+  margin: 12px 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.warn {
+  background: rgba(255,37,37,0.05);
+  border: 1px solid rgba(255,37,37,0.2);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #ff6b6b;
+  margin: 12px 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* ── Store badges ── */
+.store-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.store-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all .15s;
+  border: 1px solid;
+}
+
+.store-link.chrome {
+  border-color: #4285f4;
+  color: #4285f4;
+  background: rgba(66,133,244,0.08);
+}
+.store-link.chrome:hover { background: rgba(66,133,244,0.18); }
+
+.store-link.firefox {
+  border-color: #ff7139;
+  color: #ff7139;
+  background: rgba(255,113,57,0.08);
+}
+.store-link.firefox:hover { background: rgba(255,113,57,0.18); }
+
+/* ── Screenshot mock ── */
+.mock-ui {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 14px 0;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.mock-bar {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border2);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text3);
+  font-size: 11px;
+}
+
+.mock-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.mock-body { padding: 14px 16px; color: var(--text2); line-height: 1.8; }
+
+.mock-body .hl { color: var(--accent3); }
+.mock-body .ok { color: var(--success); }
+.mock-body .dim { color: var(--text3); }
+
+/* ── CTA ── */
+.cta-box {
+  background: linear-gradient(135deg, rgba(255,37,37,0.08), rgba(255,107,45,0.06));
+  border: 1px solid rgba(255,37,37,0.25);
+  border-radius: 6px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.cta-box h3 {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: .04em;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.cta-box p { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 13px 28px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(255,37,37,0.35);
+  transition: all .18s;
+}
+.cta-btn:hover { box-shadow: 0 4px 32px rgba(255,37,37,0.55); transform: translateY(-1px); }
+
+/* ── Footer ── */
+.footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* ── Section label ── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 580px) {
+  .page-title { font-size: 38px; }
+  .step-body { padding-left: 0; margin-top: 10px; }
+  .store-links { flex-direction: column; }
+  .store-link { justify-content: center; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div>
+      <a href="/" class="back-btn">
+        ← Back to VORTEX
+      </a>
+      <div class="page-eyebrow">// authentication guide</div>
+      <div class="page-title">Cookie<span>Guide</span></div>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="intro">
+    Some YouTube videos require you to be <strong>signed in</strong> to watch them — age-restricted content, members-only videos, or private unlisted links.
+    VORTEX can use your browser's login cookies to authenticate with YouTube on your behalf.
+    This guide walks you through exporting and uploading them in under two minutes.
+  </div>
+
+  <div class="section-label">Steps</div>
+
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">Install the cookie exporter extension</div>
+    </div>
+    <div class="step-body">
+      <p>You need a browser extension that can export cookies in <strong>Netscape format</strong> — the format yt-dlp understands. The recommended one is <strong>Get cookies.txt LOCALLY</strong>.</p>
+
+      <div class="store-links">
+        <a class="store-link chrome"
+           href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc"
+           target="_blank" rel="noopener">
+          ⬡ Chrome Web Store
+        </a>
+        <a class="store-link firefox"
+           href="https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/"
+           target="_blank" rel="noopener">
+          🦊 Firefox Add-ons
+        </a>
+      </div>
+
+      <div class="tip">
+        ✓ &nbsp;This extension works locally and does not send your cookies anywhere — it only writes a file to your computer.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">Sign in to YouTube</div>
+    </div>
+    <div class="step-body">
+      <p>Open <strong>youtube.com</strong> in the same browser where you installed the extension and make sure you are signed in to your Google account.</p>
+      <div class="substeps">
+        <div class="substep">
+          <div class="substep-icon">🌐</div>
+          <div class="substep-text">Navigate to <strong>youtube.com</strong></div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">👤</div>
+          <div class="substep-text">Click <strong>Sign In</strong> in the top-right corner if you are not already signed in</div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">✅</div>
+          <div class="substep-text">Confirm your profile picture appears — you are now signed in</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div class="step-title">Export your cookies</div>
+    </div>
+    <div class="step-body">
+      <p>While on <strong>youtube.com</strong>, click the extension icon in your browser toolbar.</p>
+      <div class="substeps">
+        <div class="substep">
+          <div class="substep-icon">🧩</div>
+          <div class="substep-text">Click the <strong>Extensions</strong> puzzle-piece icon in your toolbar, then click <strong>Get cookies.txt LOCALLY</strong></div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">📋</div>
+          <div class="substep-text">A popup appears. Make sure the domain shows <strong>youtube.com</strong></div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">💾</div>
+          <div class="substep-text">Click <strong>Export</strong> — your browser will download a file called <strong>youtube.com_cookies.txt</strong></div>
+        </div>
+      </div>
+
+      <div class="mock-ui" style="margin-top:16px;">
+        <div class="mock-bar">
+          <div class="mock-dot" style="background:#ff5f57;"></div>
+          <div class="mock-dot" style="background:#febc2e;"></div>
+          <div class="mock-dot" style="background:#28c840;"></div>
+          <span style="margin-left:6px;">Get cookies.txt LOCALLY</span>
+        </div>
+        <div class="mock-body">
+          <div><span class="dim">Domain:</span> &nbsp;<span class="hl">youtube.com</span></div>
+          <div><span class="dim">Cookies found:</span> &nbsp;<span class="ok">34</span></div>
+          <div style="margin-top:10px;">
+            <span style="background:rgba(255,174,0,0.15);border:1px solid rgba(255,174,0,0.3);
+                         color:var(--accent3);padding:5px 14px;border-radius:3px;cursor:pointer;">
+              Export as cookies.txt
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        ⚠ &nbsp;Never share your cookies.txt file with anyone. It acts like a login session token and gives full access to your account.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div class="step-title">Upload cookies to VORTEX</div>
+    </div>
+    <div class="step-body">
+      <p>Go back to the VORTEX home page. You will see a <strong>🍪 Browser Cookies</strong> panel near the top of the page.</p>
+      <div class="substeps">
+        <div class="substep">
+          <div class="substep-icon">🖱</div>
+          <div class="substep-text">Drag your <strong>cookies.txt</strong> file onto the dashed drop zone — or click it to open a file picker</div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">🟢</div>
+          <div class="substep-text">The status bar turns <strong style="color:var(--success);">green</strong> and shows the file size when cookies are active</div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">▶</div>
+          <div class="substep-text">Paste your YouTube URL and download as normal — authentication is now automatic</div>
+        </div>
+      </div>
+
+      <div class="tip">
+        ✓ &nbsp;Your cookie file is stored only on this server and is never sent anywhere else. Click <strong>Clear</strong> in the panel to remove it at any time.
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <div class="step-title">When cookies expire</div>
+    </div>
+    <div class="step-body">
+      <p>YouTube session cookies typically last <strong>a few weeks to a few months</strong>. If you start getting sign-in errors again, just repeat steps 2–4 to export a fresh cookie file and re-upload it.</p>
+      <div class="substeps">
+        <div class="substep">
+          <div class="substep-icon">🔄</div>
+          <div class="substep-text">Click <strong>Clear</strong> in the cookie panel on the home page to remove the old file</div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">💾</div>
+          <div class="substep-text">Export a new cookies.txt from your browser while signed in to YouTube</div>
+        </div>
+        <div class="substep">
+          <div class="substep-icon">📂</div>
+          <div class="substep-text">Drop the new file onto the VORTEX cookie panel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h3>Ready to Download</h3>
+    <p>Cookies uploaded — go back and grab that age-restricted video.</p>
+    <a href="/" class="cta-btn">
+      ← Back to VORTEX
+    </a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <span>VORTEX — Cookie Guide</span>
+  <span>Powered by yt-dlp + ffmpeg</span>
+</footer>
+
+<script>
+  // Sync theme with main app
+  const theme = localStorage.getItem('vortex-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+</script>
+</body>
+</html>

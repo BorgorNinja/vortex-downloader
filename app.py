@@ -143,6 +143,11 @@ threading.Thread(target=_cleanup_worker, daemon=True).start()
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
+@app.route("/guide")
+def guide():
+    return render_template("guide.html")
+
+
 @app.route("/")
 def index():
     sid = _get_sid()

@@ -1613,13 +1613,24 @@ body::after {
 
   <!-- Cookie Upload Panel -->
   <div id="cookie-panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;flex-wrap:wrap;gap:8px;">
       <div class="section-label" style="margin-bottom:0;">🍪 &nbsp;Browser Cookies</div>
-      <button onclick="toggleCookiePanel()"
-        style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;
-               border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
-        Hide ▲
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <a href="/guide" target="_blank"
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+                 padding:4px 12px;border:1px solid var(--accent3);border-radius:var(--radius);
+                 color:var(--accent3);text-decoration:none;background:rgba(255,174,0,0.08);
+                 transition:all .15s;"
+          onmouseover="this.style.background='rgba(255,174,0,0.18)'"
+          onmouseout="this.style.background='rgba(255,174,0,0.08)'">
+          ? Guide
+        </a>
+        <button onclick="toggleCookiePanel()"
+          style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;
+                 border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
+          Hide ▲
+        </button>
+      </div>
     </div>
 
     <div id="cookie-drop-zone" onclick="document.getElementById('cookie-file-input').click()"
