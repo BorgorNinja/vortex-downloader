@@ -38,6 +38,115 @@
 
 html { scroll-behavior: smooth; }
 
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg:       #f4f4f4;
+  --bg2:      #ffffff;
+  --bg3:      #ebebeb;
+  --bg4:      #e0e0e0;
+  --border:   #d4d4d4;
+  --border2:  #c0c0c0;
+  --border3:  #aaa;
+  --text:     #111111;
+  --text2:    #555;
+  --text3:    #999;
+}
+[data-theme="light"] body { background: var(--bg); }
+[data-theme="light"] body::before { opacity: 0.2; }
+[data-theme="light"] body::after {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+}
+
+/* ── Tooltip ── */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #e2e2e2;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+  border: 1px solid var(--border2);
+}
+[data-tip]:hover::after { opacity: 1; }
+
+/* ── Speed graph ── */
+#speed-graph-wrap {
+  padding: 10px 20px 0;
+  border-top: 1px solid var(--border);
+}
+#speed-graph-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+#speed-canvas {
+  width: 100%;
+  height: 44px;
+  display: block;
+  border-radius: 4px;
+  background: var(--bg3);
+}
+
+/* ── History panel ── */
+#history-panel {
+  margin-top: 28px;
+  display: none;
+}
+#history-search {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 9px 14px;
+  outline: none;
+  margin-bottom: 8px;
+  caret-color: var(--accent);
+  transition: border-color .2s;
+}
+#history-search:focus { border-color: var(--accent); }
+.history-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.history-entry:last-child { border-bottom: none; }
+.hist-fmt {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.hist-title { flex: 1; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-time  { flex-shrink: 0; color: var(--text3); font-size: 10px; }
+
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -1345,6 +1454,10 @@ body::after {
         autocomplete="off"
         spellcheck="false"
       />
+      <button class="btn btn-fetch" id="paste-btn" onclick="pasteFromClipboard()"
+        style="padding:0 14px;" data-tip="Paste URL from clipboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      </button>
       <button class="btn btn-fetch" id="fetch-btn" onclick="fetchInfo()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         Fetch
@@ -1362,6 +1475,7 @@ body::after {
           <button class="toggle-btn"        data-format="m4a"  onclick="selectFormat('m4a')">M4A</button>
           <button class="toggle-btn"        data-format="flac" onclick="selectFormat('flac')">FLAC</button>
           <button class="toggle-btn"        data-format="ogg"  onclick="selectFormat('ogg')">OGG</button>
+          <button class="toggle-btn"        data-format="gif"  onclick="selectFormat('gif')" data-tip="Download as animated GIF (up to 480p)">GIF</button>
         </div>
       </div>
 
@@ -1373,9 +1487,42 @@ body::after {
       </div>
 
       <div class="option-group" id="subtitle-group" style="display:none;">
-        <div class="option-group-label">Subtitles</div>
-        <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">Off</button>
+        <div class="option-group-label" data-tip="Download English subtitles">Subtitles</div>
+        <div class="toggle-group">
+          <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">Off</button>
+          <button class="toggle-btn" id="burn-btn" onclick="toggleBurnSubs()" style="display:none;"
+            data-tip="Hardcode subs into the video pixels">Burn</button>
+        </div>
       </div>
+
+      <div class="option-group" data-tip="Split video at chapter markers into separate files">
+        <div class="option-group-label">Chapters</div>
+        <button class="toggle-btn" id="chapters-btn" onclick="toggleChapters()">Off</button>
+      </div>
+
+      <div class="option-group" data-tip="Attempt to bypass age-restricted videos">
+        <div class="option-group-label">Age bypass</div>
+        <button class="toggle-btn" id="age-bypass-btn" onclick="toggleAgeBypass()">Off</button>
+      </div>
+    </div>
+
+    <!-- Format checker -->
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-fetch" id="formats-btn" onclick="checkFormats()"
+        style="height:36px;font-size:10px;padding:0 16px;"
+        data-tip="Show all available formats from YouTube for this URL">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Check Formats
+      </button>
+      <button class="btn btn-fetch" id="update-btn" onclick="updateYtDlp()"
+        style="height:36px;font-size:10px;padding:0 16px;margin-left:auto;"
+        data-tip="Run pip install -U yt-dlp to get latest format support">
+        ↻ Update yt-dlp
+      </button>
+    </div>
+    <div id="formats-panel" style="display:none;margin-top:10px;background:var(--bg2);
+         border:1px solid var(--border2);border-radius:var(--radius);max-height:180px;
+         overflow-y:auto;font-family:var(--mono);font-size:11px;">
     </div>
 
     <!-- Clip / Trim -->
@@ -1483,6 +1630,12 @@ body::after {
         <div class="wave-bar"></div><div class="wave-bar"></div>
         <div class="wave-bar"></div><div class="wave-bar"></div>
         <div class="wave-bar"></div>
+      </div>
+
+      <!-- Speed graph -->
+      <div id="speed-graph-wrap">
+        <div id="speed-graph-label">Live Speed</div>
+        <canvas id="speed-canvas" height="44"></canvas>
       </div>
 
       <!-- Circular ring + status info -->
@@ -1621,6 +1774,15 @@ body::after {
     </div>
   </div>
 
+  <!-- History panel -->
+  <div id="history-panel">
+    <div class="section-label">Download History</div>
+    <input id="history-search" placeholder="Search history..." oninput="filterHistory(this.value)" />
+    <div id="history-list"
+      style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
+    </div>
+  </div>
+
 </div><!-- /container -->
 
 <!-- Confetti container -->
@@ -1641,11 +1803,18 @@ let sseSource        = null;
 let startTime        = null;
 let elapsedTimer     = null;
 let subtitlesEnabled = false;
+let burnSubtitles    = false;
+let splitChapters    = false;
+let ageBypass        = false;
 let queuePollTimer   = null;
+let downloadHistory  = [];
+let speedHistory     = [];
+const MAX_SPEED_PTS  = 60;
 
 const MP4_QUALITIES   = ['360p', '480p', '720p', '1080p', 'best'];
 const MP3_QUALITIES   = ['128k', '192k', '320k'];
 const AUDIO_FORMATS   = new Set(['mp3', 'm4a', 'flac', 'ogg']);
+const GIF_FORMATS     = new Set(['gif']);
 const SEGMENTS        = 24;
 
 // Pre-generate random heights for segment bars (stable, not re-randomised each tick)
@@ -1657,6 +1826,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildSegmentBars();
   requestNotifPermission();
   startQueuePoll();
+  initTheme();
 
   document.getElementById('url-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') fetchInfo();
@@ -1703,7 +1873,12 @@ function selectFormat(fmt) {
     setQualityButtons(MP4_QUALITIES, '720p');
     currentQuality = '720p';
     el('subtitle-group').style.display = '';
+  } else if (fmt === 'gif') {
+    setQualityButtons([], null);
+    el('quality-group').style.display = 'none';
+    el('subtitle-group').style.display = 'none';
   } else {
+    el('quality-group').style.display = '';
     setQualityButtons(MP3_QUALITIES, '192k');
     currentQuality = '192k';
     el('subtitle-group').style.display = 'none';
@@ -1719,6 +1894,29 @@ function toggleSubtitles() {
   const btn = el('subtitle-btn');
   btn.textContent = subtitlesEnabled ? 'On' : 'Off';
   btn.classList.toggle('active', subtitlesEnabled);
+  const burnBtn = el('burn-btn');
+  if (burnBtn) burnBtn.style.display = subtitlesEnabled ? '' : 'none';
+  if (!subtitlesEnabled) { burnSubtitles = false; if(burnBtn) burnBtn.classList.remove('active'); }
+}
+
+function toggleBurnSubs() {
+  burnSubtitles = !burnSubtitles;
+  const btn = el('burn-btn');
+  btn.classList.toggle('active', burnSubtitles);
+}
+
+function toggleChapters() {
+  splitChapters = !splitChapters;
+  const btn = el('chapters-btn');
+  btn.textContent = splitChapters ? 'On' : 'Off';
+  btn.classList.toggle('active', splitChapters);
+}
+
+function toggleAgeBypass() {
+  ageBypass = !ageBypass;
+  const btn = el('age-bypass-btn');
+  btn.textContent = ageBypass ? 'On' : 'Off';
+  btn.classList.toggle('active', ageBypass);
 }
 
 function setQualityButtons(qualities, defaultQ) {
@@ -1935,6 +2133,9 @@ async function startDownload() {
         playlist_title: (currentInfo && currentInfo.title) || '',
         selected_urls:  getSelectedUrls(),
         subtitles:      subtitlesEnabled,
+        burn_subtitles: burnSubtitles,
+        split_chapters: splitChapters,
+        age_bypass:     ageBypass,
         start_time:     clipStart !== '' ? Number(clipStart) : undefined,
         end_time:       clipEnd   !== '' ? Number(clipEnd)   : undefined,
       })
@@ -1987,6 +2188,8 @@ function resetProgressUI() {
   el('waveform-row').classList.remove('done');
   el('waveform-row').classList.add('active');
   el('ring-svg').classList.remove('done');
+  speedHistory = [];
+  drawSpeedGraph();
 }
 
 // ── SSE Progress ───────────────────────────────────────────────────────────
@@ -2049,6 +2252,12 @@ function updateProgress(task) {
   if (task.speed) el('stat-speed').textContent = task.speed;
   if (task.eta)   el('stat-eta').textContent   = task.eta;
   if (task.title) el('progress-title').textContent = task.title;
+
+  // Feed speed graph
+  const bps = task.speed_bytes || 0;
+  speedHistory.push(bps);
+  if (speedHistory.length > MAX_SPEED_PTS) speedHistory.shift();
+  drawSpeedGraph();
 
   setStatusStyle(task.status);
   setPhase(task.status);
@@ -2196,6 +2405,7 @@ function showDone(taskId, task) {
     showSection('save-section');
     fireConfetti();
     resetDownloadBtn();
+    recordHistory(task, currentFormat, currentQuality);
   }, 700);
 }
 
@@ -2365,6 +2575,197 @@ function fireNotification(title, body) {
   try {
     new Notification(title, { body, icon: '' });
   } catch (_) {}
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('vortex-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  const btn = el('theme-btn');
+  if (btn) btn.textContent = saved === 'light' ? '◑ Theme' : '◐ Theme';
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('vortex-theme', next);
+  const btn = el('theme-btn');
+  if (btn) btn.textContent = next === 'light' ? '◑ Theme' : '◐ Theme';
+}
+
+// ── Clipboard paste ────────────────────────────────────────────────────────
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    const input = el('url-input');
+    if (input && text.trim()) {
+      input.value = text.trim();
+      input.dispatchEvent(new Event('input'));
+      // Auto-fetch if it looks like a YouTube URL
+      if (/youtube\.com|youtu\.be/i.test(text)) fetchInfo();
+    }
+  } catch (_) {
+    showError('Clipboard access denied — paste manually with Ctrl+V');
+  }
+}
+
+// ── Speed graph ────────────────────────────────────────────────────────────
+function drawSpeedGraph() {
+  const canvas = el('speed-canvas');
+  if (!canvas) return;
+  const ctx    = canvas.getContext('2d');
+  const W      = canvas.offsetWidth || 600;
+  const H      = canvas.height = 44;
+  canvas.width = W;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!speedHistory.length) return;
+  const max = Math.max(...speedHistory, 1);
+  const pts = speedHistory;
+  const step = W / Math.max(pts.length - 1, 1);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth   = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = Math.round(H - (i / 4) * H) + 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(255,107,45,0.55)');
+  grad.addColorStop(1, 'rgba(255,37,37,0.05)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  pts.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 4);
+    i === 0 ? ctx.lineTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((pts.length - 1) * step, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((v, i) => {
+    const x = i * step;
+    const y = H - (v / max) * (H - 4);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#ff6b2d';
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+}
+
+// ── Format checker ────────────────────────────────────────────────────────
+async function checkFormats() {
+  const url = el('url-input').value.trim();
+  if (!url) { showError('Fetch a URL first.'); return; }
+  const btn = el('formats-btn');
+  btn.textContent = '...';
+  btn.disabled    = true;
+  try {
+    const res  = await fetch('/api/formats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    renderFormatsPanel(data.formats || []);
+  } catch (_) {
+    showError('Could not fetch formats.');
+  } finally {
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Check Formats';
+    btn.disabled = false;
+  }
+}
+
+function renderFormatsPanel(formats) {
+  const panel = el('formats-panel');
+  if (!formats.length) { panel.style.display = 'none'; return; }
+
+  const rows = formats.map(f => {
+    const size = f.filesize ? (f.filesize / 1048576).toFixed(1) + ' MB' : '?';
+    const type = f.has_video && f.has_audio ? '🎬' : f.has_video ? '📹' : '🔊';
+    return `<div style="display:flex;gap:10px;align-items:center;padding:7px 14px;
+                         border-bottom:1px solid var(--border);">
+      <span style="color:var(--text3);min-width:14px;">${type}</span>
+      <span style="color:var(--accent);min-width:40px;">${escHtml(f.ext)}</span>
+      <span style="color:var(--text);min-width:55px;">${escHtml(f.res)}${f.fps ? '@'+f.fps : ''}</span>
+      <span style="color:var(--text2);flex:1;">${escHtml(f.note || '')}</span>
+      <span style="color:var(--text3);">${size}</span>
+    </div>`;
+  }).join('');
+  panel.innerHTML = rows;
+  panel.style.display = '';
+}
+
+// ── yt-dlp update ─────────────────────────────────────────────────────────
+async function updateYtDlp() {
+  const btn = el('update-btn');
+  btn.textContent  = '↻ Updating...';
+  btn.disabled     = true;
+  try {
+    const res  = await fetch('/api/update-ytdlp', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = '✓ Updated';
+      btn.style.color = 'var(--success)';
+    } else {
+      showError('Update failed: ' + (data.error || 'unknown error'));
+      btn.textContent = '↻ Update yt-dlp';
+    }
+  } catch (_) {
+    showError('Update request failed.');
+    btn.textContent = '↻ Update yt-dlp';
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => {
+      btn.textContent = '↻ Update yt-dlp';
+      btn.style.color = '';
+    }, 4000);
+  }
+}
+
+// ── Download history ──────────────────────────────────────────────────────
+function recordHistory(task, fmt, quality) {
+  downloadHistory.unshift({
+    title:   task.title  || 'Unknown',
+    fmt:     fmt.toUpperCase(),
+    quality: quality,
+    time:    new Date().toLocaleTimeString(),
+  });
+  if (downloadHistory.length > 50) downloadHistory.pop();
+  renderHistory('');
+  el('history-panel').style.display = '';
+}
+
+function filterHistory(q) {
+  renderHistory(q.toLowerCase());
+}
+
+function renderHistory(query) {
+  const list    = el('history-list');
+  if (!list) return;
+  const entries = downloadHistory.filter(h =>
+    !query || h.title.toLowerCase().includes(query)
+  );
+  if (!entries.length) {
+    list.innerHTML = '<div style="padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--text3);">No results</div>';
+    return;
+  }
+  list.innerHTML = entries.map(h => `
+    <div class="history-entry">
+      <span class="hist-fmt">${escHtml(h.fmt)}</span>
+      <span class="hist-title" title="${escHtml(h.title)}">${escHtml(h.title)}</span>
+      <span class="hist-time">${escHtml(h.time)}</span>
+    </div>
+  `).join('');
 }
 
 // ── Icon SVGs ──────────────────────────────────────────────────────────────
