@@ -19,6 +19,7 @@ MAX_CONCURRENT     = int(os.getenv("VORTEX_MAX_CONCURRENT",    "3"))
 FILE_TTL           = int(os.getenv("VORTEX_FILE_TTL",          "1800"))
 SSE_TIMEOUT        = int(os.getenv("VORTEX_SSE_TIMEOUT",       "300"))
 COOKIE_FILE        = os.getenv("VORTEX_COOKIE_FILE", "")
+COOKIE_UPLOAD_PATH = Path(__file__).parent / "user_cookies.txt"
 MAX_URL_LENGTH     = 2048
 DISK_QUOTA_MB      = int(os.getenv("VORTEX_DISK_QUOTA_MB",     "2048"))
 RATE_LIMIT_MAX     = int(os.getenv("VORTEX_RATE_LIMIT_MAX",    "10"))
@@ -79,6 +80,14 @@ def format_duration(seconds):
         return "Unknown"
     s = int(seconds); h = s // 3600; m = (s % 3600) // 60; s = s % 60
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+
+def resolve_cookie_file() -> str:
+    """Return the active cookie file path, preferring user-uploaded over env var."""
+    if COOKIE_UPLOAD_PATH.is_file() and COOKIE_UPLOAD_PATH.stat().st_size > 0:
+        return str(COOKIE_UPLOAD_PATH)
+    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
+        return COOKIE_FILE
+    return ""
 
 def sanitize_filename(name: str) -> str:
     return re.sub(r'[\/*?:"<>|]', "_", name).strip().rstrip(".")[:200] or "playlist"
@@ -159,8 +168,9 @@ def get_info():
         return jsonify({"error": "Only YouTube URLs are supported"}), 400
 
     ydl_opts = {"quiet": True, "no_warnings": True, "extract_flat": "in_playlist", "skip_download": True}
-    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
+    _cf = resolve_cookie_file()
+    if _cf:
+        ydl_opts["cookiefile"] = _cf
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -212,8 +222,9 @@ def get_formats():
         return jsonify({"error": "Invalid URL"}), 400
 
     ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
-    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
+    _cf = resolve_cookie_file()
+    if _cf:
+        ydl_opts["cookiefile"] = _cf
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -396,8 +407,9 @@ def _run_download_inner(task_id, url, fmt, quality, is_playlist, playlist_title,
         "ignoreerrors":   True,
         "prefer_ffmpeg":  True,
     }
-    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
-        common_opts["cookiefile"] = COOKIE_FILE
+    _cf = resolve_cookie_file()
+    if _cf:
+        common_opts["cookiefile"] = _cf
     if age_bypass:
         common_opts["age_limit"]   = 99
         common_opts["user_agent"]  = (
@@ -611,6 +623,49 @@ def task_status(task_id):
     if not task:
         return jsonify({"error": "Not found"}), 404
     return jsonify({k: v for k, v in task.items() if not k.startswith("_")})
+
+
+@app.route("/api/cookies/upload", methods=["POST"])
+def upload_cookies():
+    f = request.files.get("cookies")
+    if not f or not f.filename:
+        return jsonify({"error": "No file provided"}), 400
+
+    # Basic Netscape cookie file validation
+    raw = f.read(4096).decode("utf-8", errors="replace")
+    if not any(line.startswith("# Netscape") or ("	" in line and len(line.split("	")) >= 7)
+               for line in raw.splitlines()[:10]):
+        return jsonify({"error": "File does not look like a Netscape cookie file. Export cookies as .txt from your browser extension."}), 422
+
+    # Write the full file
+    f.seek(0)
+    COOKIE_UPLOAD_PATH.write_bytes(f.read())
+    size = COOKIE_UPLOAD_PATH.stat().st_size
+    print(f"[cookies] Uploaded cookie file — {size} bytes")
+    return jsonify({"ok": True, "size": size})
+
+
+@app.route("/api/cookies/status")
+def cookie_status():
+    if COOKIE_UPLOAD_PATH.is_file() and COOKIE_UPLOAD_PATH.stat().st_size > 0:
+        stat = COOKIE_UPLOAD_PATH.stat()
+        return jsonify({
+            "active": True,
+            "source": "uploaded",
+            "size":   stat.st_size,
+            "mtime":  stat.st_mtime,
+        })
+    if COOKIE_FILE and os.path.isfile(COOKIE_FILE):
+        return jsonify({"active": True, "source": "env", "path": COOKIE_FILE})
+    return jsonify({"active": False})
+
+
+@app.route("/api/cookies/clear", methods=["POST"])
+def clear_cookies():
+    if COOKIE_UPLOAD_PATH.is_file():
+        COOKIE_UPLOAD_PATH.unlink()
+        print("[cookies] Uploaded cookie file cleared")
+    return jsonify({"ok": True})
 
 
 @app.route("/api/health")

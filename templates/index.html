@@ -82,6 +82,42 @@ html { scroll-behavior: smooth; }
 }
 [data-tip]:hover::after { opacity: 1; }
 
+/* ── Cookie panel ── */
+#cookie-panel {
+  margin-top: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+#cookie-drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 22px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  margin: 14px;
+}
+#cookie-drop-zone.drag-over {
+  border-color: var(--accent3);
+  background: rgba(255,174,0,0.06);
+  color: var(--accent3);
+}
+#cookie-drop-zone input[type=file] { display: none; }
+#cookie-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
 /* ── Speed graph ── */
 #speed-graph-wrap {
   padding: 10px 20px 0;
@@ -1575,6 +1611,45 @@ body::after {
     </div>
   </div>
 
+  <!-- Cookie Upload Panel -->
+  <div id="cookie-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">
+      <div class="section-label" style="margin-bottom:0;">🍪 &nbsp;Browser Cookies</div>
+      <button onclick="toggleCookiePanel()"
+        style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;
+               border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
+        Hide ▲
+      </button>
+    </div>
+
+    <div id="cookie-drop-zone" onclick="document.getElementById('cookie-file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleCookieDrop(event)">
+      <input type="file" id="cookie-file-input" accept=".txt" onchange="handleCookieFile(this.files[0])">
+      <div style="font-size:22px;margin-bottom:8px;">📂</div>
+      <div style="color:var(--text2);margin-bottom:4px;">Drop your <strong>cookies.txt</strong> here or click to browse</div>
+      <div style="font-size:10px;color:var(--text3);">
+        Export from Chrome/Firefox using the
+        <strong style="color:var(--accent3);">Get cookies.txt LOCALLY</strong> extension
+        — Netscape format required
+      </div>
+    </div>
+
+    <div id="cookie-status-bar">
+      <span id="cookie-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;"></span>
+      <span id="cookie-status-text" style="flex:1;color:var(--text3);">No cookies loaded</span>
+      <button id="cookie-clear-btn" onclick="clearCookies()"
+        style="display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+               text-transform:uppercase;padding:3px 10px;border:1px solid var(--border2);
+               border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+        Clear
+      </button>
+    </div>
+  </div>
+
   <!-- Error Box -->
   <div id="error-box">
     <div class="error-label">Error</div>
@@ -1852,6 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
   requestNotifPermission();
   startQueuePoll();
   initTheme();
+  initCookieStatus();
 
   document.getElementById('url-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') fetchInfo();
@@ -2795,6 +2871,103 @@ function renderHistory(query) {
       <span class="hist-time">${escHtml(h.time)}</span>
     </div>
   `).join('');
+}
+
+// ── Cookie management ────────────────────────────────────────────────────
+let cookiePanelOpen = true;
+
+async function initCookieStatus() {
+  try {
+    const res  = await fetch('/api/cookies/status');
+    const data = await res.json();
+    setCookieStatus(data);
+  } catch (_) {}
+}
+
+function setCookieStatus(data) {
+  const dot  = el('cookie-status-dot');
+  const txt  = el('cookie-status-text');
+  const clr  = el('cookie-clear-btn');
+  if (!dot || !txt) return;
+
+  if (data.active) {
+    dot.style.background = 'var(--success)';
+    const src  = data.source === 'uploaded' ? 'User-uploaded' : 'Env file';
+    const size = data.size ? ` — ${(data.size / 1024).toFixed(1)} KB` : '';
+    txt.textContent  = `${src} cookies active${size}`;
+    txt.style.color  = 'var(--success)';
+    if (clr) clr.style.display = '';
+    // Update drop zone text
+    const dz = el('cookie-drop-zone');
+    if (dz) dz.style.borderColor = 'var(--success)';
+  } else {
+    dot.style.background = 'var(--text3)';
+    txt.textContent = 'No cookies loaded — age-restricted videos may fail';
+    txt.style.color = 'var(--text3)';
+    if (clr) clr.style.display = 'none';
+  }
+}
+
+function handleCookieDrop(event) {
+  event.preventDefault();
+  el('cookie-drop-zone').classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (file) handleCookieFile(file);
+}
+
+async function handleCookieFile(file) {
+  if (!file) return;
+  const dz = el('cookie-drop-zone');
+
+  if (!file.name.endsWith('.txt')) {
+    showError('Cookie file must be a .txt file in Netscape format.');
+    return;
+  }
+
+  dz.style.borderColor = 'var(--accent3)';
+  const statusTxt = el('cookie-status-text');
+  if (statusTxt) { statusTxt.textContent = 'Uploading...'; statusTxt.style.color = 'var(--accent3)'; }
+
+  const form = new FormData();
+  form.append('cookies', file);
+
+  try {
+    const res  = await fetch('/api/cookies/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      setCookieStatus({ active: true, source: 'uploaded', size: data.size });
+      dz.querySelector('div:nth-child(2)').textContent = `✓ ${file.name} loaded`;
+    } else {
+      showError(data.error || 'Cookie upload failed.');
+      dz.style.borderColor = 'var(--accent)';
+      if (statusTxt) { statusTxt.textContent = 'Upload failed'; statusTxt.style.color = 'var(--accent)'; }
+    }
+  } catch (_) {
+    showError('Cookie upload request failed.');
+  }
+}
+
+async function clearCookies() {
+  try {
+    await fetch('/api/cookies/clear', { method: 'POST' });
+    setCookieStatus({ active: false });
+    const dz = el('cookie-drop-zone');
+    if (dz) {
+      dz.style.borderColor = '';
+      dz.querySelector('div:nth-child(2)').textContent = 'Drop your cookies.txt here or click to browse';
+    }
+    // Reset file input so same file can be re-uploaded
+    const inp = el('cookie-file-input');
+    if (inp) inp.value = '';
+  } catch (_) {}
+}
+
+function toggleCookiePanel() {
+  cookiePanelOpen = !cookiePanelOpen;
+  const dz  = el('cookie-drop-zone');
+  const btn = el('cookie-panel').querySelector('button');
+  if (dz) dz.style.display = cookiePanelOpen ? '' : 'none';
+  if (btn) btn.textContent = cookiePanelOpen ? 'Hide ▲' : 'Show ▼';
 }
 
 // ── Icon SVGs ──────────────────────────────────────────────────────────────
