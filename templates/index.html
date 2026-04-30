@@ -6,275 +6,194 @@
 <title>VORTEX Downloader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Azeret+Mono:wght@300;400;500;600&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
-/* ── Reset & Variables ─────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --bg:       #080808;
-  --bg2:      #0e0e0e;
-  --bg3:      #141414;
-  --bg4:      #1a1a1a;
-  --border:   #1e1e1e;
-  --border2:  #2a2a2a;
-  --border3:  #333;
-  --accent:   #ff2525;
-  --accent2:  #ff6b2d;
-  --accent3:  #ffae00;
-  --text:     #e2e2e2;
-  --text2:    #888;
-  --text3:    #444;
-  --success:  #00e676;
-  --success2: #00c853;
-  --mono:     'Azeret Mono', monospace;
+  --bg:       #080b0a;
+  --bg2:      #0d110f;
+  --bg3:      #121812;
+  --bg4:      #182018;
+  --border:   #1e2a1e;
+  --border2:  #253525;
+  --border3:  #2f422f;
+  --amber:    #ffaa00;
+  --amber2:   #ff7700;
+  --green:    #00dd66;
+  --green2:   #00ff88;
+  --red:      #ff2222;
+  --cyan:     #00ccff;
+  --text:     #d4e8d4;
+  --text2:    #7a9a7a;
+  --text3:    #3d5a3d;
+  --mono:     'Share Tech Mono', 'Courier New', monospace;
+  --display:  'VT323', monospace;
   --sans:     'Barlow', sans-serif;
-  --display:  'Bebas Neue', sans-serif;
-  --radius:   4px;
-  --glow:     0 0 20px rgba(255,37,37,0.18);
-  --glow2:    0 0 40px rgba(255,37,37,0.08);
-  --glow-g:   0 0 20px rgba(0,230,118,0.2);
+  --radius:   2px;
+  --inset:    inset 0 1px 4px rgba(0,0,0,0.7);
+  --panel-shadow: 0 2px 12px rgba(0,0,0,0.6);
 }
+
+[data-theme="light"] {
+  --bg:    #e8ede8;
+  --bg2:   #f0f5f0;
+  --bg3:   #dce8dc;
+  --bg4:   #c8d8c8;
+  --border:#b0c8b0;
+  --border2:#94a894;
+  --border3:#7a927a;
+  --text:  #1a2a1a;
+  --text2: #3a5a3a;
+  --text3: #6a8a6a;
+}
+[data-theme="light"] body::after { opacity: .08; }
 
 html { scroll-behavior: smooth; }
 
-/* ── Light theme ── */
-[data-theme="light"] {
-  --bg:       #f4f4f4;
-  --bg2:      #ffffff;
-  --bg3:      #ebebeb;
-  --bg4:      #e0e0e0;
-  --border:   #d4d4d4;
-  --border2:  #c0c0c0;
-  --border3:  #aaa;
-  --text:     #111111;
-  --text2:    #555;
-  --text3:    #999;
+/* ── Body + scanlines ── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-[data-theme="light"] body { background: var(--bg); }
-[data-theme="light"] body::before { opacity: 0.2; }
-[data-theme="light"] body::after {
-  background-image:
-    linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
 }
+
+/* Subtle green phosphor glow bg */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,200,80,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ── */
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+/* ── Panel (the core UI primitive) ── */
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  box-shadow: var(--panel-shadow), inset 0 0 0 1px rgba(0,180,60,0.04);
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  background: linear-gradient(180deg, var(--bg4) 0%, var(--bg3) 100%);
+  border-bottom: 1px solid var(--border2);
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+}
+
+.panel-title-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title-text::before {
+  content: '■';
+  font-size: 8px;
+  color: var(--amber2);
+}
+
+.panel-body { padding: 14px 16px; }
 
 /* ── Tooltip ── */
 [data-tip] { position: relative; cursor: help; }
 [data-tip]::after {
   content: attr(data-tip);
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
-  background: #111;
-  color: #e2e2e2;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  color: var(--amber);
   font-family: var(--mono);
   font-size: 10px;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 4px 8px;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 100;
-  border: 1px solid var(--border2);
+  transition: opacity .15s;
+  z-index: 200;
 }
 [data-tip]:hover::after { opacity: 1; }
 
-/* ── Cookie panel ── */
-#cookie-panel {
-  margin-top: 16px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-#cookie-drop-zone {
-  border: 2px dashed var(--border2);
-  border-radius: var(--radius);
-  padding: 22px 18px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color .2s, background .2s;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text3);
-  margin: 14px;
-}
-#cookie-drop-zone.drag-over {
-  border-color: var(--accent3);
-  background: rgba(255,174,0,0.06);
-  color: var(--accent3);
-}
-#cookie-drop-zone input[type=file] { display: none; }
-#cookie-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-/* ── Speed graph ── */
-#speed-graph-wrap {
-  padding: 10px 20px 0;
-  border-top: 1px solid var(--border);
-}
-#speed-graph-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 4px;
-}
-#speed-canvas {
-  width: 100%;
-  height: 44px;
-  display: block;
-  border-radius: 4px;
-  background: var(--bg3);
-}
-
-/* ── History panel ── */
-#history-panel {
-  margin-top: 28px;
-  display: none;
-}
-#history-search {
-  width: 100%;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 12px;
-  padding: 9px 14px;
-  outline: none;
-  margin-bottom: 8px;
-  caret-color: var(--accent);
-  transition: border-color .2s;
-}
-#history-search:focus { border-color: var(--accent); }
-.history-entry {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 16px;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-.history-entry:last-child { border-bottom: none; }
-.hist-fmt {
-  flex-shrink: 0;
-  padding: 2px 7px;
-  border-radius: 3px;
-  background: var(--bg3);
-  color: var(--text2);
-  font-size: 9px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.hist-title { flex: 1; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-time  { flex-shrink: 0; color: var(--text3); font-size: 10px; }
-
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.6;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Noise texture */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.6;
-}
-
-/* Grid background */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Layout ────────────────────────────────────────────────────── */
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 0 24px 100px;
-}
-
-/* ── Header ────────────────────────────────────────────────────── */
+/* ── Header ── */
 .header {
-  padding: 52px 0 44px;
+  padding: 28px 0 20px;
   display: flex;
   align-items: flex-end;
-  gap: 20px;
-  opacity: 0;
-  transform: translateY(-12px);
-  animation: fadeSlideDown 0.6s ease forwards;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 18px;
 }
 
-.logo-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  flex: 1;
-}
+.logo-wrap {}
 
 .logo-eyebrow {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.25em;
-  color: var(--accent);
+  letter-spacing: .3em;
+  color: var(--green);
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .logo {
   font-family: var(--display);
-  font-size: clamp(52px, 9vw, 88px);
-  line-height: 0.88;
-  letter-spacing: 0.02em;
-  background: linear-gradient(135deg, #fff 0%, #aaa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: clamp(56px, 10vw, 96px);
+  line-height: .9;
+  color: var(--amber);
+  text-shadow: 0 0 20px rgba(255,170,0,.3), 2px 2px 0 rgba(0,0,0,.5);
+  letter-spacing: .04em;
 }
 
-.logo span {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.logo span { color: var(--green2); text-shadow: 0 0 20px rgba(0,255,136,.3), 2px 2px 0 rgba(0,0,0,.5); }
 
 .header-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
 }
 
 .badge {
@@ -283,174 +202,138 @@ body::after {
   gap: 6px;
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.1em;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border: 1px solid var(--border2);
-  border-radius: 2px;
   color: var(--text2);
+  background: var(--bg3);
 }
 
 .badge .dot {
   width: 5px; height: 5px;
-  background: var(--success);
+  background: var(--green);
   border-radius: 50%;
-  animation: pulse-dot 2s ease-in-out infinite;
+  box-shadow: 0 0 5px var(--green);
+  animation: blink 2s step-start infinite;
 }
 
-/* ── Divider ───────────────────────────────────────────────────── */
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--border) 40%, transparent 100%);
-  margin-bottom: 40px;
-  opacity: 0;
-  animation: fadeIn 0.6s ease 0.3s forwards;
-}
-
-/* ── Section Label ─────────────────────────────────────────────── */
-.section-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-/* ── Input Section ─────────────────────────────────────────────── */
-.input-section {
-  opacity: 0;
-  transform: translateY(16px);
-  animation: fadeSlideUp 0.6s ease 0.2s forwards;
-}
-
+/* ── URL section ── */
 .url-row {
   display: flex;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 6px;
+  margin-bottom: 0;
 }
 
 .url-input {
   flex: 1;
-  background: var(--bg2);
+  background: var(--bg);
   border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  color: var(--text);
+  box-shadow: var(--inset);
+  color: var(--green2);
   font-family: var(--mono);
   font-size: 13px;
-  padding: 14px 18px;
+  padding: 10px 14px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  caret-color: var(--accent);
+  caret-color: var(--green2);
+  transition: border-color .15s, box-shadow .15s;
 }
-
 .url-input::placeholder { color: var(--text3); }
 .url-input:focus {
-  border-color: var(--accent);
-  box-shadow: var(--glow);
+  border-color: var(--green);
+  box-shadow: var(--inset), 0 0 8px rgba(0,200,80,.15);
 }
 
-/* ── Buttons ───────────────────────────────────────────────────── */
+/* ── Buttons ── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  font-weight: 600;
-  padding: 0 24px;
-  border: none;
-  border-radius: var(--radius);
+  font-weight: 400;
+  padding: 0 18px;
+  border: 1px solid var(--border2);
   cursor: pointer;
-  transition: all 0.18s;
+  transition: all .12s;
   white-space: nowrap;
-  height: 48px;
+  height: 42px;
+  background: var(--bg3);
+  color: var(--text2);
+  box-shadow: 0 1px 0 var(--border3), inset 0 1px 0 rgba(255,255,255,0.03);
 }
+
+.btn:hover {
+  background: var(--bg4);
+  border-color: var(--border3);
+  color: var(--text);
+}
+.btn:active { box-shadow: var(--inset); transform: translateY(1px); }
+.btn.loading { pointer-events: none; color: var(--text3); }
 
 .btn-fetch {
   background: var(--bg3);
-  border: 1px solid var(--border2);
-  color: var(--text);
+  border-color: var(--border3);
+  color: var(--text2);
 }
 
-.btn-fetch:hover { border-color: var(--text2); background: var(--bg4); }
-.btn-fetch:active { transform: scale(0.97); }
-.btn-fetch.loading { pointer-events: none; color: var(--text2); }
+.btn-amber {
+  border-color: var(--amber2);
+  color: var(--amber);
+  background: rgba(255,170,0,0.07);
+}
+.btn-amber:hover { background: rgba(255,170,0,0.15); border-color: var(--amber); color: var(--amber); }
+
+.btn-green {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(0,200,80,0.07);
+}
+.btn-green:hover { background: rgba(0,200,80,0.15); }
 
 .btn-download {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  color: #fff;
-  box-shadow: 0 4px 20px rgba(255,37,37,0.3);
+  background: linear-gradient(180deg, rgba(255,170,0,0.18) 0%, rgba(255,120,0,0.12) 100%);
+  border: 1px solid var(--amber2);
+  color: var(--amber);
   min-width: 180px;
-  height: 52px;
+  height: 44px;
   font-size: 12px;
-  position: relative;
-  overflow: hidden;
+  letter-spacing: .18em;
+  box-shadow: 0 1px 0 rgba(255,120,0,0.3), inset 0 1px 0 rgba(255,220,0,0.08);
+  text-shadow: 0 0 10px rgba(255,170,0,0.4);
 }
-
-.btn-download::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
-  transform: translateX(-100%);
-  transition: transform 0s;
+.btn-download:hover {
+  background: linear-gradient(180deg, rgba(255,170,0,0.28) 0%, rgba(255,120,0,0.22) 100%);
+  box-shadow: 0 0 14px rgba(255,150,0,0.3), 0 1px 0 rgba(255,120,0,0.3);
+  color: var(--amber2);
 }
-
-.btn-download:hover::before {
-  transform: translateX(100%);
-  transition: transform 0.5s ease;
-}
-
-.btn-download:hover { box-shadow: 0 4px 32px rgba(255,37,37,0.5); transform: translateY(-1px); }
-.btn-download:active { transform: scale(0.97) translateY(0); }
-.btn-download:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-download:disabled { opacity: .35; cursor: not-allowed; transform: none; }
 
 .btn-save {
-  background: linear-gradient(135deg, var(--success2) 0%, var(--success) 100%);
-  color: #000;
-  font-weight: 700;
-  box-shadow: 0 4px 20px rgba(0,230,118,0.3);
-  min-width: 200px;
-  height: 52px;
+  background: linear-gradient(180deg, rgba(0,220,100,0.18) 0%, rgba(0,160,60,0.12) 100%);
+  border: 1px solid var(--green);
+  color: var(--green2);
+  font-weight: 400;
+  min-width: 180px;
+  height: 44px;
   font-size: 12px;
+  letter-spacing: .18em;
   text-decoration: none;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0,150,60,0.3), inset 0 1px 0 rgba(0,255,100,0.06);
+  text-shadow: 0 0 10px rgba(0,220,100,0.4);
+}
+.btn-save:hover {
+  background: linear-gradient(180deg, rgba(0,220,100,0.28) 0%, rgba(0,160,60,0.22) 100%);
+  box-shadow: 0 0 14px rgba(0,200,80,0.3), 0 1px 0 rgba(0,150,60,0.3);
 }
 
-.btn-save::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
-  transform: translateX(-100%);
-}
-
-.btn-save:hover::before {
-  transform: translateX(100%);
-  transition: transform 0.5s ease;
-}
-
-.btn-save:hover { box-shadow: 0 4px 32px rgba(0,230,118,0.5); transform: translateY(-1px); }
-
-/* ── Format & Quality Toggles ──────────────────────────────────── */
+/* ── Toggle buttons ── */
 .options-row {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
   align-items: flex-start;
 }
@@ -458,88 +341,77 @@ body::after {
 .option-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .option-group-label {
   font-family: var(--mono);
   font-size: 10px;
-  letter-spacing: 0.15em;
+  letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--text3);
 }
 
-.toggle-group { display: flex; gap: 6px; }
+.toggle-group { display: flex; gap: 4px; }
 
 .toggle-btn {
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.1em;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  padding: 7px 16px;
+  padding: 5px 13px;
   border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  background: var(--bg2);
+  background: var(--bg);
   color: var(--text2);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .1s;
+  box-shadow: 0 1px 0 var(--border3), inset 0 1px 0 rgba(255,255,255,0.02);
 }
+.toggle-btn:hover { border-color: var(--border3); color: var(--text); background: var(--bg3); }
+.toggle-btn.active     { background: rgba(255,170,0,.12); border-color: var(--amber); color: var(--amber); box-shadow: 0 0 8px rgba(255,150,0,.2); }
+.toggle-btn.active-mp3 { background: rgba(0,200,200,.1);  border-color: var(--cyan);  color: var(--cyan);  box-shadow: 0 0 8px rgba(0,200,200,.2); }
+.toggle-btn.active-gif { background: rgba(0,200,80,.1);   border-color: var(--green); color: var(--green); box-shadow: 0 0 8px rgba(0,200,80,.2); }
 
-.toggle-btn:hover { border-color: var(--text2); color: var(--text); background: var(--bg3); }
-.toggle-btn.active     { background: var(--accent);  border-color: var(--accent);  color: #fff; box-shadow: 0 0 10px rgba(255,37,37,0.35); }
-.toggle-btn.active-mp3 { background: var(--accent3); border-color: var(--accent3); color: #000; box-shadow: 0 0 10px rgba(255,174,0,0.35); }
-.toggle-btn.active-gif { background: var(--success2);border-color: var(--success2);color: #000; box-shadow: 0 0 10px rgba(0,200,83,0.3); }
-
-/* ── Info Card ─────────────────────────────────────────────────── */
+/* ── Info Card ── */
 #info-card {
   display: none;
-  margin: 32px 0;
+  margin: 12px 0;
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(10px);
+  transition: opacity .3s, transform .3s;
 }
+#info-card.visible { display: block; opacity: 1; transform: translateY(0); }
 
-#info-card.visible {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
+.card { background: var(--bg2); border: 1px solid var(--border2); }
 .card-inner { display: flex; gap: 0; }
 
 .card-thumb {
   flex-shrink: 0;
-  width: 180px;
-  height: 108px;
+  width: 160px; height: 96px;
   object-fit: cover;
   display: block;
+  filter: brightness(.85) saturate(.8);
+  border-right: 1px solid var(--border2);
 }
-
 .card-thumb-placeholder {
   flex-shrink: 0;
-  width: 180px;
-  height: 108px;
+  width: 160px; height: 96px;
   background: var(--bg3);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text3);
-  font-size: 32px;
+  font-family: var(--display);
+  font-size: 36px;
+  border-right: 1px solid var(--border2);
 }
 
 .card-body {
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
   overflow: hidden;
 }
@@ -547,23 +419,21 @@ body::after {
 .card-type {
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.2em;
+  letter-spacing: .25em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--amber);
 }
 
 .card-title {
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 15px;
-  line-height: 1.3;
+  font-family: var(--mono);
+  font-size: 14px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.card-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+.card-meta { display: flex; gap: 14px; flex-wrap: wrap; }
 
 .meta-item {
   font-family: var(--mono);
@@ -573,13 +443,12 @@ body::after {
   align-items: center;
   gap: 5px;
 }
+.meta-item svg { opacity: .5; flex-shrink: 0; }
 
-.meta-item svg { opacity: 0.5; flex-shrink: 0; }
-
-/* ── Playlist entries ──────────────────────────────────────────── */
+/* ── Playlist ── */
 .playlist-list {
   border-top: 1px solid var(--border);
-  max-height: 220px;
+  max-height: 200px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
@@ -588,347 +457,213 @@ body::after {
 .playlist-entry {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 20px;
+  gap: 10px;
+  padding: 7px 16px;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
+  transition: background .1s;
 }
-
 .playlist-entry:last-child { border-bottom: none; }
 .playlist-entry:hover { background: var(--bg3); }
-.playlist-entry.excluded { opacity: 0.38; }
+.playlist-entry.excluded { opacity: .3; }
 
-/* ── Playlist select-all header ── */
 .playlist-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 20px;
+  padding: 6px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg3);
 }
-.playlist-count-label {
-  flex: 1;
-  font-size: 11px;
-  color: var(--text3);
-  font-family: var(--mono);
-}
+.playlist-count-label { flex: 1; font-size: 10px; color: var(--text3); font-family: var(--mono); }
 .playlist-select-btn {
-  font-size: 10px;
-  font-family: var(--mono);
-  color: var(--accent);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: background 0.15s;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 10px; font-family: var(--mono); color: var(--amber);
+  background: none; border: none; cursor: pointer; padding: 2px 6px;
+  text-transform: uppercase; letter-spacing: .06em;
 }
-.playlist-select-btn:hover { background: rgba(0,230,118,0.08); }
+.playlist-select-btn:hover { background: rgba(255,170,0,0.1); }
 
-/* ── Custom checkbox ── */
-.entry-checkbox-wrap {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
+.entry-checkbox-wrap { flex-shrink: 0; display: flex; align-items: center; }
 .entry-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid var(--border2);
-  border-radius: 4px;
-  background: transparent;
+  appearance: none; -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border: 1px solid var(--border2);
+  background: var(--bg);
   cursor: pointer;
   position: relative;
-  transition: border-color 0.15s, background 0.15s;
-  flex-shrink: 0;
+  transition: border-color .1s;
 }
-.entry-checkbox:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
+.entry-checkbox:checked { background: var(--amber); border-color: var(--amber); }
 .entry-checkbox:checked::after {
   content: '';
   position: absolute;
-  left: 3px; top: 1px;
-  width: 5px; height: 8px;
-  border: 2px solid #000;
-  border-top: none;
-  border-left: none;
+  left: 3px; top: 0px;
+  width: 4px; height: 8px;
+  border: 2px solid var(--bg);
+  border-top: none; border-left: none;
   transform: rotate(45deg);
 }
-.entry-checkbox:hover { border-color: var(--accent); }
+.entry-checkbox:hover { border-color: var(--amber); }
 
-.entry-num {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text3);
-  width: 24px;
-  flex-shrink: 0;
-  text-align: right;
-}
+.entry-num { font-family: var(--mono); font-size: 10px; color: var(--text3); width: 22px; text-align: right; flex-shrink: 0; }
+.entry-title { flex: 1; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-duration { font-family: var(--mono); font-size: 10px; color: var(--text3); flex-shrink: 0; }
 
-.entry-title {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.entry-duration {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-
-/* ── Download Section ──────────────────────────────────────────── */
-#download-section {
-  display: none;
-  margin-top: 28px;
-  opacity: 0;
-  animation: fadeSlideUp 0.4s ease forwards;
-}
-
+/* ── Download section ── */
+#download-section { display: none; margin-top: 12px; }
 #download-section.visible { display: block; }
+.download-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-.download-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ENHANCED PROGRESS SECTION
-   ════════════════════════════════════════════════════════════════ */
-#progress-section {
-  display: none;
-  margin-top: 28px;
-}
-
+/* ── Progress section ── */
+#progress-section { display: none; margin-top: 12px; }
 #progress-section.visible { display: block; }
 
-/* ── Progress Shell ────────────────────────────────────────────── */
 .progress-shell {
   background: var(--bg2);
   border: 1px solid var(--border2);
-  border-radius: 6px;
+  box-shadow: var(--panel-shadow);
   overflow: hidden;
   position: relative;
 }
 
-/* Top accent stripe that shifts when active */
+/* Amber LED strip at top when active */
 .progress-shell::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
-  background-size: 200% 100%;
-  animation: gradientShift 2s linear infinite;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--amber) 50%, transparent 100%);
   opacity: 0;
-  transition: opacity 0.4s;
+  transition: opacity .4s;
 }
-
 .progress-shell.active::before { opacity: 1; }
 
-/* ── Progress Header ───────────────────────────────────────────── */
+/* ── Progress header ── */
 .progress-header {
-  padding: 18px 20px 14px;
+  padding: 12px 16px 10px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
 }
 
 .progress-title-wrap { flex: 1; overflow: hidden; }
-
-.progress-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 4px;
-}
-
-.progress-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.progress-label { font-family: var(--mono); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
+.progress-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .progress-pct-large {
   font-family: var(--display);
-  font-size: 48px;
+  font-size: 52px;
   line-height: 1;
-  letter-spacing: 0.02em;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  transition: all 0.3s ease;
+  letter-spacing: .04em;
+  color: var(--amber);
+  text-shadow: 0 0 16px rgba(255,150,0,.35);
+  transition: color .3s;
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 90px;
   text-align: right;
 }
+.progress-pct-large.done { color: var(--green2); text-shadow: 0 0 16px rgba(0,220,100,.35); }
 
-.progress-pct-large.done {
-  background: linear-gradient(135deg, var(--success2) 0%, var(--success) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-/* ── Main Progress Bar ─────────────────────────────────────────── */
-.progress-bar-section {
-  padding: 16px 20px 8px;
-}
+/* ── Progress bar ── */
+.progress-bar-section { padding: 12px 16px 6px; }
 
 .progress-track-outer {
   position: relative;
-  height: 12px;
-  background: var(--bg3);
-  border-radius: 6px;
+  height: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  box-shadow: var(--inset);
   overflow: hidden;
-  box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
 }
 
 .progress-fill {
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
-  border-radius: 6px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--amber) 0px,
+    var(--amber) 8px,
+    rgba(255,150,0,0.6) 8px,
+    rgba(255,150,0,0.6) 10px
+  );
+  transition: width .5s cubic-bezier(.4,0,.2,1);
   width: 0%;
-  will-change: width;
+  box-shadow: 2px 0 8px rgba(255,150,0,.4);
 }
-
-/* Gloss overlay */
-.progress-fill::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 60%);
-  border-radius: 6px;
-}
-
-/* Running shine */
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 80px;
-  right: -40px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
-  animation: sweepShine 1.4s ease-in-out infinite;
-}
-
 .progress-fill.done {
-  background: linear-gradient(90deg, var(--success2) 0%, var(--success) 100%);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--green) 0px,
+    var(--green) 8px,
+    rgba(0,200,80,0.6) 8px,
+    rgba(0,200,80,0.6) 10px
+  );
+  box-shadow: 2px 0 8px rgba(0,200,80,.4);
 }
-
-.progress-fill.done::after { animation: none; }
 
 /* Tick marks */
-.progress-ticks {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  pointer-events: none;
-}
-
-.progress-tick {
-  flex: 1;
-  border-right: 1px solid rgba(0,0,0,0.2);
-}
-
+.progress-ticks { position: absolute; inset: 0; display: flex; pointer-events: none; }
+.progress-tick { flex: 1; border-right: 1px solid rgba(0,0,0,0.3); }
 .progress-tick:last-child { border-right: none; }
 
-/* Percentage label below bar */
 .progress-bar-pct {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
-  font-family: var(--mono);
+  margin-top: 4px;
   font-size: 9px;
   color: var(--text3);
-  letter-spacing: 0.05em;
+  letter-spacing: .05em;
 }
 
-/* ── Segment bars (histogram-style) ───────────────────────────── */
+/* ── Segment bars (LED blocks) ── */
 .segment-bars {
   display: flex;
-  gap: 3px;
-  padding: 10px 20px 4px;
+  gap: 2px;
+  padding: 8px 16px 4px;
   align-items: flex-end;
-  height: 56px;
+  height: 48px;
 }
 
 .segment-bar {
   flex: 1;
-  background: var(--bg3);
-  border-radius: 2px 2px 0 0;
-  transition: background 0.3s;
-  min-height: 4px;
+  background: var(--border);
+  min-height: 3px;
   position: relative;
-  overflow: hidden;
 }
-
 .segment-bar.filled {
-  background: linear-gradient(180deg, var(--accent2) 0%, var(--accent) 100%);
+  background: var(--amber2);
+  box-shadow: 0 0 4px rgba(255,120,0,.5);
 }
-
-.segment-bar.filled::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 40%;
-  background: rgba(255,255,255,0.12);
-}
-
 .segment-bar.done {
-  background: linear-gradient(180deg, var(--success) 0%, var(--success2) 100%);
+  background: var(--green);
+  box-shadow: 0 0 4px rgba(0,220,80,.5);
 }
 
-/* ── Waveform visualizer ───────────────────────────────────────── */
+/* ── Waveform ── */
 .waveform-row {
-  padding: 4px 20px 14px;
+  padding: 4px 16px 10px;
   display: flex;
   align-items: center;
-  gap: 3px;
-  height: 40px;
+  gap: 2px;
+  height: 36px;
 }
-
 .wave-bar {
   flex: 1;
   background: var(--border);
-  border-radius: 1px;
-  height: 3px;
+  height: 2px;
   transform-origin: center;
-  transition: background 0.3s;
+  transition: background .3s;
 }
-
 .waveform-row.active .wave-bar {
-  animation: waveAnim 0.8s ease-in-out infinite alternate;
-  background: rgba(255,37,37,0.45);
+  animation: waveAnim .8s ease-in-out infinite alternate;
+  background: rgba(255,150,0,.55);
 }
-
 .waveform-row.active.done .wave-bar {
-  background: rgba(0,230,118,0.45);
+  background: rgba(0,220,80,.55);
   animation-duration: 1.4s;
 }
-
 .wave-bar:nth-child(1)  { animation-delay: 0.00s; }
 .wave-bar:nth-child(2)  { animation-delay: 0.04s; }
 .wave-bar:nth-child(3)  { animation-delay: 0.08s; }
@@ -955,75 +690,65 @@ body::after {
 .wave-bar:nth-child(24) { animation-delay: 0.92s; }
 .wave-bar:nth-child(25) { animation-delay: 0.96s; }
 
-/* ── Ring + Info ───────────────────────────────────────────────── */
+/* ── Speed graph ── */
+#speed-graph-wrap {
+  padding: 8px 16px 4px;
+  border-top: 1px solid var(--border);
+}
+#speed-graph-label {
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 3px;
+}
+#speed-canvas {
+  width: 100%; height: 40px;
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* ── Ring + info ── */
 .progress-ring-wrap {
-  padding: 14px 20px 14px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   border-top: 1px solid var(--border);
 }
 
 .ring-svg {
   flex-shrink: 0;
   transform: rotate(-90deg);
-  filter: drop-shadow(0 0 6px rgba(255,37,37,0.25));
-  transition: filter 0.4s;
+  filter: drop-shadow(0 0 5px rgba(255,150,0,.2));
+  transition: filter .4s;
 }
+.ring-svg.done { filter: drop-shadow(0 0 5px rgba(0,200,80,.25)); }
 
-.ring-svg.done {
-  filter: drop-shadow(0 0 6px rgba(0,230,118,0.3));
-}
-
-.ring-track {
-  fill: none;
-  stroke: var(--border2);
-  stroke-width: 5;
-}
-
+.ring-track { fill: none; stroke: var(--border2); stroke-width: 5; }
 .ring-fill {
   fill: none;
   stroke: url(#ringGrad);
   stroke-width: 5;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   stroke-dasharray: 188.5;
   stroke-dashoffset: 188.5;
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
 }
-
 .ring-fill.done { stroke: url(#ringGradGreen); }
 
 .ring-info { flex: 1; }
+.ring-status-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+.ring-status-value { font-family: var(--display); font-size: 28px; color: var(--text); margin-bottom: 2px; line-height: 1; }
+.ring-status-sub { font-size: 11px; color: var(--text2); }
 
-.ring-status-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 6px;
-}
-
-.ring-status-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 3px;
-}
-
-.ring-status-sub {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text2);
-}
-
-/* ── Phase Timeline ────────────────────────────────────────────── */
+/* ── Phase timeline ── */
 .phase-timeline {
-  padding: 14px 20px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 0;
 }
 
 .phase-step {
@@ -1031,74 +756,53 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   position: relative;
 }
 
 .phase-step:not(:last-child)::after {
-  content: '';
+  content: '- - -';
   position: absolute;
-  top: 9px;
-  left: calc(50% + 12px);
-  right: calc(-50% + 12px);
-  height: 1px;
-  background: var(--border2);
-  transition: background 0.4s;
+  top: 8px;
+  left: calc(50% + 14px);
+  right: calc(-50% + 14px);
+  font-size: 8px;
+  color: var(--border2);
+  letter-spacing: .05em;
+  text-align: center;
+  overflow: hidden;
   z-index: 0;
 }
-
-.phase-step.done-step:not(:last-child)::after  { background: var(--success); }
-.phase-step.active-step:not(:last-child)::after { background: linear-gradient(90deg, var(--accent), var(--border2)); }
+.phase-step.done-step:not(:last-child)::after  { color: var(--green); }
+.phase-step.active-step:not(:last-child)::after { color: var(--amber2); }
 
 .phase-node {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border2);
-  background: var(--bg3);
+  width: 18px; height: 18px;
+  border: 1px solid var(--border2);
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--mono);
-  font-size: 7px;
+  font-size: 8px;
   color: var(--text3);
   position: relative;
   z-index: 1;
-  transition: all 0.3s;
+  transition: all .3s;
 }
+.phase-step.done-step .phase-node   { border-color: var(--green); background: rgba(0,200,80,.1); color: var(--green); }
+.phase-step.active-step .phase-node { border-color: var(--amber); background: rgba(255,150,0,.1); color: var(--amber); animation: blinkNode 1s step-start infinite; }
 
-.phase-step.done-step .phase-node {
-  border-color: var(--success);
-  background: rgba(0,230,118,0.1);
-  color: var(--success);
-}
+.phase-name { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); text-align: center; transition: color .3s; }
+.phase-step.done-step .phase-name   { color: var(--green); }
+.phase-step.active-step .phase-name { color: var(--amber); }
 
-.phase-step.active-step .phase-node {
-  border-color: var(--accent);
-  background: rgba(255,37,37,0.08);
-  color: var(--accent);
-  animation: pulseNode 1.5s ease-in-out infinite;
-}
-
-.phase-name {
-  font-family: var(--mono);
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text3);
-  text-align: center;
-  transition: color 0.3s;
-}
-
-.phase-step.done-step .phase-name   { color: var(--success); }
-.phase-step.active-step .phase-name { color: var(--accent); }
-
-/* ── Stats Row ─────────────────────────────────────────────────── */
+/* ── Stats row ── */
 .progress-stats-row {
   display: flex;
   align-items: center;
-  gap: 0;
   border-top: 1px solid var(--border);
-  padding: 12px 20px;
+  padding: 10px 16px;
+  gap: 0;
 }
 
 .stat-block {
@@ -1106,356 +810,253 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-right: 20px;
+  padding-right: 16px;
   border-right: 1px solid var(--border);
 }
+.stat-block:last-child { border-right: none; padding-right: 0; padding-left: 16px; flex: 0; align-items: flex-end; }
 
-.stat-block:last-child {
-  border-right: none;
-  padding-right: 0;
-  padding-left: 20px;
-  flex: 0;
-  align-items: flex-end;
-}
+.stat-label { font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.stat-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
+.stat-value.speed { color: var(--amber); }
+.stat-value.eta   { color: var(--cyan); }
 
-.stat-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
-
-.stat-value {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.stat-value.speed { color: var(--accent2); }
-.stat-value.eta   { color: var(--accent3); }
-
-/* ── Status Bar ────────────────────────────────────────────────── */
+/* ── Status bar ── */
 .status-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
-  background: var(--bg3);
-  border-top: 1px solid var(--border);
-  font-family: var(--mono);
+  padding: 8px 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--border2);
   font-size: 10px;
 }
 
-.status-dot-ring {
-  position: relative;
-  width: 10px; height: 10px;
-  flex-shrink: 0;
-}
+.status-dot-ring { position: relative; width: 10px; height: 10px; flex-shrink: 0; }
+.status-dot-ring .dot-inner { position: absolute; inset: 2px; background: var(--text3); }
+.status-dot-ring .dot-ring  { position: absolute; inset: 0; border: 1px solid var(--text3); transition: border-color .3s; }
 
-.status-dot-ring .dot-inner {
-  position: absolute;
-  inset: 2px;
-  border-radius: 50%;
-  background: var(--text3);
-  transition: background 0.3s;
-}
+.status-dot-ring.downloading .dot-inner { background: var(--amber); }
+.status-dot-ring.downloading .dot-ring  { border-color: var(--amber); animation: pingRing 1s ease-in-out infinite; }
+.status-dot-ring.processing .dot-inner  { background: var(--cyan); }
+.status-dot-ring.processing .dot-ring   { border-color: var(--cyan); animation: pingRing 1.2s ease-in-out infinite; }
+.status-dot-ring.done .dot-inner        { background: var(--green); box-shadow: 0 0 5px var(--green); }
+.status-dot-ring.done .dot-ring         { border-color: var(--green); animation: none; }
+.status-dot-ring.error .dot-inner       { background: var(--red); }
 
-.status-dot-ring .dot-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid var(--text3);
-  transition: border-color 0.3s;
-}
+.status-text-main { letter-spacing: .12em; text-transform: uppercase; color: var(--text2); transition: color .3s; }
+.status-text-main.downloading { color: var(--amber); }
+.status-text-main.processing  { color: var(--cyan); }
+.status-text-main.done        { color: var(--green); }
+.status-text-main.error       { color: var(--red); }
 
-.status-dot-ring.downloading .dot-inner { background: var(--accent); }
-.status-dot-ring.downloading .dot-ring  { border-color: var(--accent); animation: pingRing 1s ease-in-out infinite; }
-.status-dot-ring.processing .dot-inner  { background: var(--accent3); }
-.status-dot-ring.processing .dot-ring   { border-color: var(--accent3); animation: pingRing 1.2s ease-in-out infinite; }
-.status-dot-ring.done .dot-inner        { background: var(--success); }
-.status-dot-ring.done .dot-ring         { border-color: var(--success); animation: none; }
-.status-dot-ring.error .dot-inner       { background: var(--accent); }
+.status-elapsed-label { margin-left: auto; color: var(--text3); font-size: 9px; letter-spacing: .1em; }
 
-.status-text-main {
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text2);
-  transition: color 0.3s;
-}
-
-.status-text-main.downloading { color: var(--accent); }
-.status-text-main.processing  { color: var(--accent3); }
-.status-text-main.done        { color: var(--success); }
-.status-text-main.error       { color: var(--accent); }
-
-.status-elapsed-label {
-  margin-left: auto;
-  color: var(--text3);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ENHANCED SAVE SECTION
-   ════════════════════════════════════════════════════════════════ */
-#save-section {
-  display: none;
-  margin-top: 28px;
-  animation: fadeSlideUp 0.5s ease forwards;
-}
-
+/* ── Save section ── */
+#save-section { display: none; margin-top: 12px; }
 #save-section.visible { display: block; }
 
 .save-shell {
   background: var(--bg2);
-  border: 1px solid rgba(0,230,118,0.25);
-  border-radius: 6px;
-  overflow: hidden;
+  border: 1px solid var(--green);
+  box-shadow: 0 0 16px rgba(0,200,80,.08), var(--panel-shadow);
   position: relative;
 }
-
 .save-shell::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--success2), var(--success), var(--success2));
-  background-size: 200% 100%;
-  animation: gradientShift 3s linear infinite;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green2), transparent);
 }
 
 .save-main {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px;
+  gap: 16px;
+  padding: 18px 20px;
   flex-wrap: wrap;
 }
 
 .save-icon-wrap {
-  width: 52px; height: 52px;
-  background: rgba(0,230,118,0.08);
-  border: 1px solid rgba(0,230,118,0.2);
-  border-radius: 50%;
+  width: 44px; height: 44px;
+  background: rgba(0,220,80,.08);
+  border: 1px solid rgba(0,220,80,.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--success);
+  color: var(--green2);
   flex-shrink: 0;
-  animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
 }
 
 .save-text { flex: 1; }
-
-.save-title {
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--text);
-  margin-bottom: 3px;
-}
-
-.save-sub {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text2);
-  word-break: break-all;
-}
+.save-title { font-family: var(--display); font-size: 28px; color: var(--green2); line-height: 1; margin-bottom: 4px; text-shadow: 0 0 12px rgba(0,220,80,.3); }
+.save-sub { font-size: 11px; color: var(--text2); word-break: break-all; }
 
 .save-stats-row {
   display: flex;
-  gap: 0;
-  border-top: 1px solid rgba(0,230,118,0.1);
-  padding: 14px 24px;
+  border-top: 1px solid rgba(0,200,80,.15);
+  padding: 12px 20px;
   flex-wrap: wrap;
+  gap: 0;
 }
 
-.save-stat {
-  flex: 1;
-  min-width: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-right: 20px;
-  border-right: 1px solid var(--border);
-}
-
+.save-stat { flex: 1; min-width: 80px; display: flex; flex-direction: column; gap: 2px; padding-right: 16px; border-right: 1px solid var(--border); }
 .save-stat:last-child { border-right: none; }
+.save-stat-label { font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.save-stat-val { font-family: var(--mono); font-size: 13px; color: var(--green); }
 
-.save-stat-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+/* ── Cookie panel ── */
+#cookie-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+
+#cookie-drop-zone {
+  border: 1px dashed var(--border2);
+  margin: 12px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  font-size: 12px;
   color: var(--text3);
 }
+#cookie-drop-zone.drag-over { border-color: var(--amber); background: rgba(255,170,0,.05); color: var(--amber); }
+#cookie-drop-zone input[type=file] { display: none; }
 
-.save-stat-val {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--success);
-  font-weight: 500;
+#cookie-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  background: var(--bg);
 }
 
-/* ── Confetti ──────────────────────────────────────────────────── */
-.confetti-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-.confetti-piece {
-  position: absolute;
-  width: 6px;
-  height: 10px;
-  opacity: 0;
-  animation: confettiFall 1.8s ease-in forwards;
-  border-radius: 1px;
-}
-
-/* ── Error Box ─────────────────────────────────────────────────── */
-#error-box {
-  display: none;
-  margin-top: 20px;
-  padding: 14px 18px;
-  background: rgba(255,37,37,0.06);
-  border: 1px solid rgba(255,37,37,0.25);
-  border-radius: var(--radius);
+/* ── History panel ── */
+#history-panel { margin-top: 18px; display: none; }
+#history-search {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  box-shadow: var(--inset);
+  color: var(--green2);
   font-family: var(--mono);
   font-size: 12px;
-  color: #ff6b6b;
+  padding: 8px 12px;
+  outline: none;
+  margin-bottom: 6px;
+  caret-color: var(--green2);
+}
+#history-search:focus { border-color: var(--green); }
+.history-entry { display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-bottom: 1px solid var(--border); font-size: 11px; }
+.history-entry:last-child { border-bottom: none; }
+.hist-fmt { flex-shrink: 0; padding: 1px 6px; border: 1px solid var(--border2); color: var(--amber); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.hist-title { flex: 1; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-time  { flex-shrink: 0; color: var(--text3); font-size: 10px; }
+
+/* ── Error box ── */
+#error-box {
+  display: none;
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: rgba(255,34,34,.06);
+  border: 1px solid rgba(255,34,34,.3);
+  font-size: 12px;
+  color: #ff6666;
   line-height: 1.5;
-  animation: fadeSlideUp 0.3s ease forwards;
 }
-
 #error-box.visible { display: block; }
+.error-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
 
-.error-label {
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 4px;
-}
-
-/* ── Footer ────────────────────────────────────────────────────── */
+/* ── Footer / status bar ── */
 .footer {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 10;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  padding: 10px 24px;
+  background: var(--bg3);
+  border-top: 1px solid var(--border2);
+  padding: 6px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: var(--mono);
   font-size: 10px;
   color: var(--text3);
-  letter-spacing: 0.06em;
+  letter-spacing: .08em;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.4);
+}
+.footer a { color: var(--amber); text-decoration: none; }
+.footer a:hover { color: var(--amber2); }
+
+/* Formats panel */
+#formats-panel {
+  display: none;
+  margin-top: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 11px;
 }
 
-.footer a { color: var(--accent); text-decoration: none; }
-.footer a:hover { text-decoration: underline; }
-
-/* ── Scrollbar ─────────────────────────────────────────────────── */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border2); }
 
-/* ── Spinner ───────────────────────────────────────────────────── */
-.spinner {
-  width: 8px; height: 8px;
-  border: 1.5px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
+/* ── Spinner ── */
+.spinner { width: 8px; height: 8px; border: 1.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+
+/* ── Confetti ── */
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
+.confetti-piece { position: absolute; width: 5px; height: 9px; opacity: 0; animation: confettiFall 1.8s ease-in forwards; }
+
+/* ── Section divider ── */
+.sec-label {
+  font-size: 9px;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.sec-label::before { content: '//'; color: var(--amber2); }
+.sec-label::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-/* ════════════════════════════════════════════════════════════════
-   KEYFRAMES
-   ════════════════════════════════════════════════════════════════ */
-@keyframes fadeSlideDown {
-  to { opacity: 1; transform: translateY(0); }
+/* ── Keyframes ── */
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .2; }
 }
-
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes blinkNode {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .3; }
 }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes waveAnim { 0% { transform: scaleY(.2); } 100% { transform: scaleY(1); } }
+@keyframes pingRing { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(2); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
+@keyframes confettiFall { 0% { opacity: 1; transform: translateY(-20px) rotate(0deg); } 100% { opacity: 0; transform: translateY(100vh) rotate(720deg); } }
+@keyframes popIn { 0% { transform: scale(.5); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
-@keyframes fadeIn {
-  to { opacity: 1; }
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes sweepShine {
-  0%   { right: 120%; opacity: 0; }
-  20%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { right: -80px; opacity: 0; }
-}
-
-@keyframes gradientShift {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
-}
-
-@keyframes waveAnim {
-  0%   { transform: scaleY(0.2); }
-  100% { transform: scaleY(1); }
-}
-
-@keyframes pingRing {
-  0%   { transform: scale(1);   opacity: 1; }
-  70%  { transform: scale(2);   opacity: 0; }
-  100% { transform: scale(1);   opacity: 0; }
-}
-
-@keyframes pulseNode {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,37,37,0.4); }
-  50%       { box-shadow: 0 0 0 5px rgba(255,37,37,0); }
-}
-
-@keyframes successPop {
-  0%   { transform: scale(0.5); opacity: 0; }
-  60%  { transform: scale(1.15); }
-  100% { transform: scale(1);   opacity: 1; }
-}
-
-@keyframes confettiFall {
-  0%   { opacity: 1; transform: translateY(-20px) rotate(0deg); }
-  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
-}
-
-/* ── Responsive ────────────────────────────────────────────────── */
+/* ── Responsive ── */
 @media (max-width: 580px) {
-  .card-thumb, .card-thumb-placeholder { width: 120px; height: 72px; }
+  .logo { font-size: 56px; }
+  .card-thumb, .card-thumb-placeholder { width: 100px; height: 64px; }
   .url-row { flex-direction: column; }
-  .btn-fetch { width: 100%; justify-content: center; }
-  .header { padding: 36px 0 30px; }
-  .header-meta { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-items: center; }
-  #theme-btn { width: 100%; margin-bottom: 0 !important; }
-  .options-row { gap: 14px; flex-direction: column; }
+  .btn-fetch, #paste-btn { width: 100%; justify-content: center; }
+  .options-row { flex-direction: column; gap: 12px; }
   .toggle-group { flex-wrap: wrap; }
   .save-main { flex-direction: column; }
-  .progress-pct-large { font-size: 36px; }
+  .progress-pct-large { font-size: 38px; }
   .phase-name { display: none; }
-  .stat-block { padding-right: 10px; }
-  .stat-block:last-child { padding-left: 10px; }
-  .progress-ring-wrap { flex-direction: column; gap: 14px; }
+  .stat-block { padding-right: 8px; }
+  .header-meta { display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px; align-items: center; }
+  #theme-btn { width: 100%; }
   #formats-btn, #update-btn { width: 100%; justify-content: center; margin-left: 0 !important; }
 }
 </style>
@@ -1467,244 +1068,233 @@ body::after {
   <!-- Header -->
   <header class="header">
     <div class="logo-wrap">
-      <div class="logo-eyebrow">// youtube downloader</div>
+      <div class="logo-eyebrow">&gt; youtube_downloader.exe</div>
       <div class="logo">VOR<span>TEX</span></div>
     </div>
     <div class="header-meta">
       <button onclick="toggleTheme()" id="theme-btn"
-        style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-               padding:7px 16px;border:1px solid var(--accent);border-radius:var(--radius);
-               background:rgba(255,37,37,0.12);color:var(--accent);cursor:pointer;
-               transition:all .2s;margin-bottom:8px;font-weight:600;"
-        onmouseover="this.style.background='rgba(255,37,37,0.25)'"
-        onmouseout="this.style.background='rgba(255,37,37,0.12)'">
-        ◐ &nbsp;THEME
+        class="btn btn-amber"
+        style="height:34px;font-size:10px;padding:0 14px;">
+        [◐] THEME
       </button>
       <div class="badge">
         <span class="dot"></span>
-        Online
+        ONLINE
       </div>
-      <div class="badge">yt-dlp engine</div>
+      <div class="badge">yt-dlp v2024</div>
     </div>
   </header>
 
-  <div class="divider"></div>
-
-  <!-- Input Section -->
-  <div class="input-section">
-    <div class="section-label">01 — Paste URL</div>
-
-    <div class="url-row">
-      <input
-        type="url"
-        class="url-input"
-        id="url-input"
-        placeholder="https://youtube.com/watch?v=... or playlist URL"
-        autocomplete="off"
-        spellcheck="false"
-      />
-      <button class="btn btn-fetch" id="paste-btn" onclick="pasteFromClipboard()"
-        style="padding:0 18px;border-color:var(--accent3);color:var(--accent3);gap:7px;"
-        onmouseover="this.style.background='rgba(255,174,0,0.12)'"
-        onmouseout="this.style.background=''">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-        Paste
-      </button>
-      <button class="btn btn-fetch" id="fetch-btn" onclick="fetchInfo()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        Fetch
-      </button>
-    </div>
-
-    <div class="section-label" style="margin-top: 24px;">02 — Options</div>
-
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:16px 18px 14px;margin-bottom:4px;">
-    <div class="options-row">
-      <div class="option-group">
-        <div class="option-group-label">Format</div>
-        <div class="toggle-group" id="format-group">
-          <button class="toggle-btn active" data-format="mp4"  onclick="selectFormat('mp4')">MP4</button>
-          <button class="toggle-btn"        data-format="mp3"  onclick="selectFormat('mp3')">MP3</button>
-          <button class="toggle-btn"        data-format="m4a"  onclick="selectFormat('m4a')">M4A</button>
-          <button class="toggle-btn"        data-format="flac" onclick="selectFormat('flac')">FLAC</button>
-          <button class="toggle-btn"        data-format="ogg"  onclick="selectFormat('ogg')">OGG</button>
-          <button class="toggle-btn"        data-format="gif"  onclick="selectFormat('gif')" data-tip="Download as animated GIF (up to 480p)">GIF</button>
-        </div>
-      </div>
-
-      <div class="option-group" id="quality-group">
-        <div class="option-group-label">Quality</div>
-        <div class="toggle-group" id="quality-btns">
-          <!-- filled by JS -->
-        </div>
-      </div>
-
-      <div class="option-group" id="subtitle-group" style="display:none;">
-        <div class="option-group-label" data-tip="Download English subtitles">Subtitles</div>
-        <div class="toggle-group">
-          <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">Off</button>
-          <button class="toggle-btn" id="burn-btn" onclick="toggleBurnSubs()" style="display:none;"
-            data-tip="Hardcode subs into the video pixels">Burn</button>
-        </div>
-      </div>
-
-      <div class="option-group" data-tip="Split video at chapter markers into separate files">
-        <div class="option-group-label">Chapters</div>
-        <button class="toggle-btn" id="chapters-btn" onclick="toggleChapters()">Off</button>
-      </div>
-
-      <div class="option-group" data-tip="Attempt to bypass age-restricted videos">
-        <div class="option-group-label">Age bypass</div>
-        <button class="toggle-btn" id="age-bypass-btn" onclick="toggleAgeBypass()">Off</button>
-      </div>
-    </div>
-
-    </div><!-- /options card -->
-
-    <!-- Format checker -->
-    <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-                padding:14px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);">
-      <button class="btn btn-fetch" id="formats-btn" onclick="checkFormats()"
-        style="height:38px;font-size:11px;padding:0 18px;
-               border-color:var(--accent2);color:var(--accent2);gap:7px;"
-        onmouseover="this.style.background='rgba(255,107,45,0.12)'"
-        onmouseout="this.style.background=''">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Check Formats
-      </button>
-      <span style="font-family:var(--mono);font-size:10px;color:var(--text3);">See what resolutions YouTube has</span>
-      <button class="btn btn-fetch" id="update-btn" onclick="updateYtDlp()"
-        style="height:38px;font-size:11px;padding:0 18px;margin-left:auto;
-               border-color:var(--success);color:var(--success);gap:7px;"
-        onmouseover="this.style.background='rgba(0,230,118,0.1)'"
-        onmouseout="this.style.background=''">
-        ↻ Update yt-dlp
-      </button>
-    </div>
-    <div id="formats-panel" style="display:none;margin-top:10px;background:var(--bg2);
-         border:1px solid var(--border2);border-radius:var(--radius);max-height:180px;
-         overflow-y:auto;font-family:var(--mono);font-size:11px;">
-    </div>
-
-    <!-- Clip / Trim -->
-    <div style="margin-top:20px;">
-      <div class="section-label">02b — Clip (optional)</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;">
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">Start (sec)</label>
-          <input type="number" id="clip-start" min="0" step="1" placeholder="e.g. 30"
-            style="width:110px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
-                   color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;
-                   transition:border-color .2s;caret-color:var(--accent);"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">End (sec)</label>
-          <input type="number" id="clip-end" min="0" step="1" placeholder="e.g. 90"
-            style="width:110px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);
-                   color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px;outline:none;
-                   transition:border-color .2s;caret-color:var(--accent);"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"/>
-        </div>
-        <div style="padding-top:18px;font-family:var(--mono);font-size:10px;color:var(--text3);">Leave blank to download full video</div>
+  <!-- 01 Input -->
+  <div class="sec-label">01 &nbsp;PASTE URL</div>
+  <div class="input-section panel" style="margin-bottom:10px;">
+    <div class="panel-body" style="padding-bottom:12px;">
+      <div class="url-row">
+        <input
+          type="url"
+          class="url-input"
+          id="url-input"
+          placeholder="https://youtube.com/watch?v=...  or  playlist URL"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn" id="paste-btn" onclick="pasteFromClipboard()"
+          style="border-color:#886600;color:#aa8800;padding:0 14px;"
+          data-tip="Paste from clipboard">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          PASTE
+        </button>
+        <button class="btn btn-fetch" id="fetch-btn" onclick="fetchInfo()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          FETCH
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Cookie Upload Panel -->
+  <!-- 02 Options -->
+  <div class="sec-label" style="margin-top:16px;">02 &nbsp;OPTIONS</div>
+  <div class="panel">
+    <div class="panel-title">
+      <span class="panel-title-text">FORMAT &amp; QUALITY</span>
+    </div>
+    <div class="panel-body">
+      <div class="options-row">
+        <div class="option-group">
+          <div class="option-group-label">Format</div>
+          <div class="toggle-group" id="format-group">
+            <button class="toggle-btn active" data-format="mp4"  onclick="selectFormat('mp4')">MP4</button>
+            <button class="toggle-btn"        data-format="mp3"  onclick="selectFormat('mp3')">MP3</button>
+            <button class="toggle-btn"        data-format="m4a"  onclick="selectFormat('m4a')">M4A</button>
+            <button class="toggle-btn"        data-format="flac" onclick="selectFormat('flac')">FLAC</button>
+            <button class="toggle-btn"        data-format="ogg"  onclick="selectFormat('ogg')">OGG</button>
+            <button class="toggle-btn"        data-format="gif"  onclick="selectFormat('gif')" data-tip="Animated GIF (480p max)">GIF</button>
+          </div>
+        </div>
+
+        <div class="option-group" id="quality-group">
+          <div class="option-group-label">Quality</div>
+          <div class="toggle-group" id="quality-btns"><!-- JS --></div>
+        </div>
+
+        <div class="option-group" id="subtitle-group" style="display:none;">
+          <div class="option-group-label" data-tip="Download English subtitles">Subtitles</div>
+          <div class="toggle-group">
+            <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">OFF</button>
+            <button class="toggle-btn" id="burn-btn" onclick="toggleBurnSubs()" style="display:none;"
+              data-tip="Burn subs into pixels">BURN</button>
+          </div>
+        </div>
+
+        <div class="option-group" data-tip="Split at chapter markers">
+          <div class="option-group-label">Chapters</div>
+          <button class="toggle-btn" id="chapters-btn" onclick="toggleChapters()">OFF</button>
+        </div>
+
+        <div class="option-group" data-tip="Bypass age restriction via user-agent">
+          <div class="option-group-label">Age bypass</div>
+          <button class="toggle-btn" id="age-bypass-btn" onclick="toggleAgeBypass()">OFF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clip / Trim -->
+  <div class="panel" style="margin-top:8px;">
+    <div class="panel-title">
+      <span class="panel-title-text">CLIP / TRIM &nbsp;<span style="font-size:9px;letter-spacing:.1em;color:var(--text3);">(OPTIONAL)</span></span>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label class="option-group-label">Start (sec)</label>
+          <input type="number" id="clip-start" min="0" step="1" placeholder="e.g. 30"
+            style="width:110px;background:var(--bg);border:1px solid var(--border2);box-shadow:var(--inset);
+                   color:var(--green2);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;
+                   caret-color:var(--green2);"
+            onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label class="option-group-label">End (sec)</label>
+          <input type="number" id="clip-end" min="0" step="1" placeholder="e.g. 90"
+            style="width:110px;background:var(--bg);border:1px solid var(--border2);box-shadow:var(--inset);
+                   color:var(--green2);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;
+                   caret-color:var(--green2);"
+            onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'"/>
+        </div>
+        <div style="font-size:10px;color:var(--text3);padding-bottom:2px;">Leave blank for full video</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Format checker + update -->
+  <div class="panel" style="margin-top:8px;">
+    <div class="panel-title">
+      <span class="panel-title-text">TOOLS</span>
+    </div>
+    <div class="panel-body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-amber" id="formats-btn" onclick="checkFormats()"
+        style="height:36px;font-size:10px;padding:0 16px;"
+        data-tip="List all available formats for this URL">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        CHECK FORMATS
+      </button>
+      <span style="font-size:10px;color:var(--text3);">See available resolutions from YouTube</span>
+      <button class="btn btn-green" id="update-btn" onclick="updateYtDlp()"
+        style="height:36px;font-size:10px;padding:0 16px;margin-left:auto;"
+        data-tip="pip install -U yt-dlp">
+        [↻] UPDATE YT-DLP
+      </button>
+    </div>
+    <div id="formats-panel"></div>
+  </div>
+
+  <!-- Cookie panel -->
+  <div class="sec-label" style="margin-top:16px;">03 &nbsp;AUTHENTICATION</div>
   <div id="cookie-panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;flex-wrap:wrap;gap:8px;">
-      <div class="section-label" style="margin-bottom:0;">🍪 &nbsp;Browser Cookies</div>
+    <div class="panel-title">
+      <span class="panel-title-text">BROWSER COOKIES</span>
       <div style="display:flex;gap:8px;align-items:center;">
         <a href="/guide" target="_blank"
-          style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-                 padding:4px 12px;border:1px solid var(--accent3);border-radius:var(--radius);
-                 color:var(--accent3);text-decoration:none;background:rgba(255,174,0,0.08);
-                 transition:all .15s;"
-          onmouseover="this.style.background='rgba(255,174,0,0.18)'"
-          onmouseout="this.style.background='rgba(255,174,0,0.08)'">
-          ? Guide
+          style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+                 padding:3px 10px;border:1px solid var(--amber2);color:var(--amber);
+                 text-decoration:none;background:rgba(255,150,0,0.07);"
+          onmouseover="this.style.background='rgba(255,150,0,0.15)'"
+          onmouseout="this.style.background='rgba(255,150,0,0.07)'">
+          [?] GUIDE
         </a>
         <button onclick="toggleCookiePanel()"
-          style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;
-                 border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
-          Hide ▲
+          style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
+          HIDE ▲
         </button>
       </div>
     </div>
-
-    <div id="cookie-drop-zone" onclick="document.getElementById('cookie-file-input').click()"
+    <div id="cookie-drop-zone"
+      onclick="document.getElementById('cookie-file-input').click()"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
       ondrop="handleCookieDrop(event)">
       <input type="file" id="cookie-file-input" accept=".txt" onchange="handleCookieFile(this.files[0])">
-      <div style="font-size:22px;margin-bottom:8px;">📂</div>
-      <div style="color:var(--text2);margin-bottom:4px;">Drop your <strong>cookies.txt</strong> here or click to browse</div>
+      <div style="font-size:20px;margin-bottom:6px;">[ 📂 ]</div>
+      <div style="color:var(--text2);margin-bottom:3px;">Drop <strong>cookies.txt</strong> here or click to browse</div>
       <div style="font-size:10px;color:var(--text3);">
-        Export from Chrome/Firefox using the
-        <strong style="color:var(--accent3);">Get cookies.txt LOCALLY</strong> extension
-        — Netscape format required
+        Export from browser using <strong style="color:var(--amber);">Get cookies.txt LOCALLY</strong> — Netscape format
       </div>
     </div>
-
     <div id="cookie-status-bar">
-      <span id="cookie-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;"></span>
+      <span id="cookie-status-dot" style="width:7px;height:7px;background:var(--text3);flex-shrink:0;"></span>
       <span id="cookie-status-text" style="flex:1;color:var(--text3);">No cookies loaded</span>
       <button id="cookie-clear-btn" onclick="clearCookies()"
-        style="display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
-               text-transform:uppercase;padding:3px 10px;border:1px solid var(--border2);
-               border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;"
-        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        style="display:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+               padding:2px 8px;border:1px solid var(--border2);background:transparent;
+               color:var(--text3);cursor:pointer;"
+        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
         onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
-        Clear
+        [X] CLEAR
       </button>
     </div>
   </div>
 
-  <!-- Error Box -->
+  <!-- Error box -->
   <div id="error-box">
-    <div class="error-label">Error</div>
+    <div class="error-label">[!] ERROR</div>
     <div id="error-msg"></div>
   </div>
 
-  <!-- Info Card -->
+  <!-- Info card -->
   <div id="info-card">
-    <div class="section-label" style="margin-bottom: 10px;">03 — Video Info</div>
-    <div class="card" id="info-card-inner">
-      <!-- populated by JS -->
-    </div>
+    <div class="sec-label" style="margin-top:16px;">04 &nbsp;VIDEO INFO</div>
+    <div class="card" id="info-card-inner"><!-- JS --></div>
   </div>
 
-  <!-- Download Section -->
+  <!-- Download section -->
   <div id="download-section">
-    <div class="section-label" style="margin-bottom: 14px;">04 — Download</div>
+    <div class="sec-label" style="margin-top:16px;">05 &nbsp;DOWNLOAD</div>
     <div class="download-row">
       <button class="btn btn-download" id="download-btn" onclick="startDownload()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Start Download
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        START DOWNLOAD
       </button>
-      <span style="font-family: var(--mono); font-size: 11px; color: var(--text3);" id="format-label">MP4 • 720p</span>
+      <span style="font-size:11px;color:var(--text3);" id="format-label">MP4 • 720p</span>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       ENHANCED PROGRESS SECTION
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- Progress section -->
   <div id="progress-section">
-    <div class="section-label" style="margin-bottom: 14px;" id="progress-section-label">Downloading...</div>
+    <div class="sec-label" style="margin-top:16px;" id="progress-section-label">DOWNLOADING...</div>
 
     <div class="progress-shell" id="progress-shell">
 
-      <!-- Header with large % counter -->
+      <!-- Header -->
       <div class="progress-header">
         <div class="progress-title-wrap">
-          <div class="progress-label">Now Downloading</div>
+          <div class="progress-label">NOW DOWNLOADING</div>
           <div class="progress-title" id="progress-title">—</div>
         </div>
         <div class="progress-pct-large" id="progress-pct-large">0%</div>
       </div>
 
-      <!-- Primary progress bar -->
+      <!-- Bar -->
       <div class="progress-bar-section">
         <div class="progress-track-outer">
           <div class="progress-fill" id="progress-fill"></div>
@@ -1721,12 +1311,10 @@ body::after {
         </div>
       </div>
 
-      <!-- Segment histogram bars -->
-      <div class="segment-bars" id="segment-bars">
-        <!-- 24 columns — built by JS -->
-      </div>
+      <!-- Segments -->
+      <div class="segment-bars" id="segment-bars"></div>
 
-      <!-- Waveform animation -->
+      <!-- Waveform -->
       <div class="waveform-row" id="waveform-row">
         <div class="wave-bar"></div><div class="wave-bar"></div>
         <div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1745,29 +1333,29 @@ body::after {
 
       <!-- Speed graph -->
       <div id="speed-graph-wrap">
-        <div id="speed-graph-label">Live Speed</div>
-        <canvas id="speed-canvas" height="44"></canvas>
+        <div id="speed-graph-label">[ LIVE SPEED ]</div>
+        <canvas id="speed-canvas" height="40"></canvas>
       </div>
 
-      <!-- Circular ring + status info -->
+      <!-- Ring + info -->
       <div class="progress-ring-wrap">
-        <svg class="ring-svg" id="ring-svg" width="72" height="72" viewBox="0 0 72 72">
+        <svg class="ring-svg" id="ring-svg" width="68" height="68" viewBox="0 0 72 72">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#ff2525"/>
-              <stop offset="100%" stop-color="#ff6b2d"/>
+              <stop offset="0%"   stop-color="#ffaa00"/>
+              <stop offset="100%" stop-color="#ff7700"/>
             </linearGradient>
             <linearGradient id="ringGradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#00c853"/>
-              <stop offset="100%" stop-color="#00e676"/>
+              <stop offset="0%"   stop-color="#00dd66"/>
+              <stop offset="100%" stop-color="#00ff88"/>
             </linearGradient>
           </defs>
           <circle class="ring-track" cx="36" cy="36" r="30"/>
           <circle class="ring-fill" id="ring-fill" cx="36" cy="36" r="30"/>
         </svg>
         <div class="ring-info">
-          <div class="ring-status-label">Current Status</div>
-          <div class="ring-status-value" id="ring-status-value">Queued</div>
+          <div class="ring-status-label">STATUS</div>
+          <div class="ring-status-value" id="ring-status-value">QUEUED</div>
           <div class="ring-status-sub" id="ring-status-sub">Waiting to start...</div>
         </div>
       </div>
@@ -1776,7 +1364,7 @@ body::after {
       <div class="phase-timeline">
         <div class="phase-step" id="phase-queued">
           <div class="phase-node">Q</div>
-          <div class="phase-name">Queued</div>
+          <div class="phase-name">Queue</div>
         </div>
         <div class="phase-step" id="phase-downloading">
           <div class="phase-node">D</div>
@@ -1792,7 +1380,7 @@ body::after {
         </div>
       </div>
 
-      <!-- Stats row -->
+      <!-- Stats -->
       <div class="progress-stats-row">
         <div class="stat-block">
           <div class="stat-label">Speed</div>
@@ -1806,7 +1394,7 @@ body::after {
           <div class="stat-label">Elapsed</div>
           <div class="stat-value" id="stat-elapsed">0s</div>
         </div>
-        <div class="stat-block" style="flex:0;align-items:flex-end;padding-left:20px;border-left:1px solid var(--border);border-right:none;padding-right:0;">
+        <div class="stat-block" style="flex:0;align-items:flex-end;padding-left:16px;border-left:1px solid var(--border);border-right:none;padding-right:0;">
           <div class="stat-label">Progress</div>
           <div class="stat-value" id="stat-pct-small">0%</div>
         </div>
@@ -1818,45 +1406,41 @@ body::after {
           <div class="dot-inner"></div>
           <div class="dot-ring"></div>
         </div>
-        <span class="status-text-main" id="status-text-main">Queued</span>
+        <span class="status-text-main" id="status-text-main">QUEUED</span>
         <span class="status-elapsed-label" id="status-elapsed-label">00:00</span>
         <button id="cancel-btn" onclick="cancelDownload()"
-          style="margin-left:12px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
-                 text-transform:uppercase;padding:4px 12px;border:1px solid var(--border2);
-                 border-radius:var(--radius);background:transparent;color:var(--text3);
-                 cursor:pointer;transition:all .15s;"
-          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          style="margin-left:10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+                 padding:3px 10px;border:1px solid var(--border2);background:transparent;
+                 color:var(--text3);cursor:pointer;"
+          onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
           onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
-          Cancel
+          [X] CANCEL
         </button>
       </div>
 
-    </div><!-- /progress-shell -->
-  </div><!-- /progress-section -->
+    </div>
+  </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       ENHANCED SAVE SECTION
-       ═══════════════════════════════════════════════════════════ -->
+  <!-- Save section -->
   <div id="save-section">
     <div class="save-shell">
+      <div class="panel-title" style="border-color:rgba(0,200,80,.3);">
+        <span class="panel-title-text" style="color:var(--green2);">DOWNLOAD COMPLETE</span>
+      </div>
       <div class="save-main">
         <div class="save-icon-wrap">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
             <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </div>
         <div class="save-text">
-          <div class="save-title">Download Complete!</div>
+          <div class="save-title">FILE READY</div>
           <div class="save-sub" id="save-filename">—</div>
         </div>
         <a class="btn btn-save" id="save-btn" href="#" download>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Save File
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          SAVE FILE
         </a>
       </div>
       <div class="save-stats-row">
@@ -1873,13 +1457,13 @@ body::after {
           <div class="save-stat-val" id="save-stat-duration">—</div>
         </div>
         <div class="save-stat">
-          <div class="save-stat-label">Time Taken</div>
+          <div class="save-stat-label">Time taken</div>
           <div class="save-stat-val" id="save-stat-time">—</div>
         </div>
       </div>
-      <div style="padding: 12px 24px; border-top: 1px solid rgba(0,230,118,0.1);">
-        <button class="btn btn-fetch" onclick="resetAll()" style="height: 38px; font-size: 10px;">
-          ↩ Download another
+      <div style="padding:10px 20px;border-top:1px solid rgba(0,200,80,.1);">
+        <button class="btn" onclick="resetAll()" style="height:34px;font-size:10px;">
+          [↩] DOWNLOAD ANOTHER
         </button>
       </div>
     </div>
@@ -1887,21 +1471,20 @@ body::after {
 
   <!-- History panel -->
   <div id="history-panel">
-    <div class="section-label">Download History</div>
-    <input id="history-search" placeholder="Search history..." oninput="filterHistory(this.value)" />
+    <div class="sec-label" style="margin-top:18px;">HISTORY</div>
+    <input id="history-search" placeholder="search history..." oninput="filterHistory(this.value)" />
     <div id="history-list"
-      style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
+      style="background:var(--bg2);border:1px solid var(--border2);overflow:hidden;">
     </div>
   </div>
 
-</div><!-- /container -->
+</div>
 
-<!-- Confetti container -->
 <div class="confetti-container" id="confetti-container"></div>
 
 <footer class="footer">
-  <span>VORTEX — YouTube Downloader</span>
-  <span>Powered by yt-dlp + ffmpeg</span>
+  <span>VORTEX v2.0 &nbsp;|&nbsp; yt-dlp + ffmpeg</span>
+  <span id="footer-status">READY</span>
 </footer>
 
 <script>
@@ -1928,7 +1511,6 @@ const AUDIO_FORMATS   = new Set(['mp3', 'm4a', 'flac', 'ogg']);
 const GIF_FORMATS     = new Set(['gif']);
 const SEGMENTS        = 24;
 
-// Pre-generate random heights for segment bars (stable, not re-randomised each tick)
 const segHeights = Array.from({ length: SEGMENTS }, () => 8 + Math.floor(Math.random() * 36));
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -1948,9 +1530,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.getElementById('info-card');
     if (card.classList.contains('visible')) {
       card.style.opacity   = '0';
-      card.style.transform = 'translateY(20px)';
+      card.style.transform = 'translateY(10px)';
       requestAnimationFrame(() => {
-        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        card.style.transition = 'opacity .3s, transform .3s';
         card.style.opacity    = '1';
         card.style.transform  = 'translateY(0)';
       });
@@ -1965,34 +1547,33 @@ function buildSegmentBars() {
   container.innerHTML = '';
   for (let i = 0; i < SEGMENTS; i++) {
     const bar = document.createElement('div');
-    bar.className        = 'segment-bar';
-    bar.id               = `seg-${i}`;
-    bar.style.height     = `${segHeights[i]}px`;
+    bar.className    = 'segment-bar';
+    bar.id           = `seg-${i}`;
+    bar.style.height = `${segHeights[i]}px`;
     container.appendChild(bar);
   }
 }
 
-// ── Format Selection ───────────────────────────────────────────────────────
+// ── Format selection ───────────────────────────────────────────────────────
 function selectFormat(fmt) {
   currentFormat = fmt;
   document.querySelectorAll('#format-group .toggle-btn').forEach(b => {
     b.classList.remove('active', 'active-mp3', 'active-gif');
     if (b.dataset.format === fmt) {
-      if (fmt === 'gif') b.classList.add('active-gif');
+      if (fmt === 'gif')              b.classList.add('active-gif');
       else if (AUDIO_FORMATS.has(fmt)) b.classList.add('active-mp3');
-      else b.classList.add('active');
+      else                             b.classList.add('active');
     }
   });
 
   if (fmt === 'mp4') {
+    el('quality-group').style.display = '';
     setQualityButtons(MP4_QUALITIES, '720p');
     currentQuality = '720p';
     el('subtitle-group').style.display = '';
   } else if (fmt === 'gif') {
-    setQualityButtons([], null);
     el('quality-group').style.display = 'none';
     el('subtitle-group').style.display = 'none';
-    document.querySelector('[data-format="gif"]')?.classList.add('active-gif');
   } else {
     el('quality-group').style.display = '';
     setQualityButtons(MP3_QUALITIES, '192k');
@@ -2000,7 +1581,7 @@ function selectFormat(fmt) {
     el('subtitle-group').style.display = 'none';
     subtitlesEnabled = false;
     const sbtn = el('subtitle-btn');
-    if (sbtn) { sbtn.textContent = 'Off'; sbtn.classList.remove('active'); }
+    if (sbtn) { sbtn.textContent = 'OFF'; sbtn.classList.remove('active'); }
   }
   updateFormatLabel();
 }
@@ -2008,30 +1589,29 @@ function selectFormat(fmt) {
 function toggleSubtitles() {
   subtitlesEnabled = !subtitlesEnabled;
   const btn = el('subtitle-btn');
-  btn.textContent = subtitlesEnabled ? 'On' : 'Off';
+  btn.textContent = subtitlesEnabled ? 'ON' : 'OFF';
   btn.classList.toggle('active', subtitlesEnabled);
   const burnBtn = el('burn-btn');
   if (burnBtn) burnBtn.style.display = subtitlesEnabled ? '' : 'none';
-  if (!subtitlesEnabled) { burnSubtitles = false; if(burnBtn) burnBtn.classList.remove('active'); }
+  if (!subtitlesEnabled) { burnSubtitles = false; if (burnBtn) burnBtn.classList.remove('active'); }
 }
 
 function toggleBurnSubs() {
   burnSubtitles = !burnSubtitles;
-  const btn = el('burn-btn');
-  btn.classList.toggle('active', burnSubtitles);
+  el('burn-btn').classList.toggle('active', burnSubtitles);
 }
 
 function toggleChapters() {
   splitChapters = !splitChapters;
   const btn = el('chapters-btn');
-  btn.textContent = splitChapters ? 'On' : 'Off';
+  btn.textContent = splitChapters ? 'ON' : 'OFF';
   btn.classList.toggle('active', splitChapters);
 }
 
 function toggleAgeBypass() {
   ageBypass = !ageBypass;
   const btn = el('age-bypass-btn');
-  btn.textContent = ageBypass ? 'On' : 'Off';
+  btn.textContent = ageBypass ? 'ON' : 'OFF';
   btn.classList.toggle('active', ageBypass);
 }
 
@@ -2041,7 +1621,7 @@ function setQualityButtons(qualities, defaultQ) {
   qualities.forEach(q => {
     const btn       = document.createElement('button');
     btn.className   = 'toggle-btn' + (q === defaultQ ? ' active' : '');
-    btn.textContent = q;
+    btn.textContent = q.toUpperCase();
     btn.onclick     = () => selectQuality(q);
     container.appendChild(btn);
   });
@@ -2050,7 +1630,7 @@ function setQualityButtons(qualities, defaultQ) {
 function selectQuality(q) {
   currentQuality = q;
   document.querySelectorAll('#quality-btns .toggle-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent === q);
+    b.classList.toggle('active', b.textContent.toLowerCase() === q);
   });
   updateFormatLabel();
 }
@@ -2063,10 +1643,10 @@ function updateFormatLabel() {
   }
 }
 
-// ── Fetch Info ─────────────────────────────────────────────────────────────
+// ── Fetch info ─────────────────────────────────────────────────────────────
 async function fetchInfo() {
   const url = document.getElementById('url-input').value.trim();
-  if (!url) { showError('Please paste a YouTube URL first.'); return; }
+  if (!url) { showError('Paste a YouTube URL first.'); return; }
 
   hideError();
   hideSection('info-card');
@@ -2078,7 +1658,8 @@ async function fetchInfo() {
 
   const btn = document.getElementById('fetch-btn');
   btn.classList.add('loading');
-  btn.innerHTML = '<span class="spinner"></span> Fetching...';
+  btn.innerHTML = '<span class="spinner"></span> FETCHING...';
+  setFooter('FETCHING INFO...');
 
   try {
     const res  = await fetch('/api/info', {
@@ -2088,28 +1669,25 @@ async function fetchInfo() {
     });
     const data = await res.json();
 
-    if (!res.ok || data.error) {
-      showError(data.error || 'Failed to fetch video info.');
-      return;
-    }
+    if (!res.ok || data.error) { showError(data.error || 'Failed to fetch info.'); setFooter('ERROR'); return; }
 
     currentInfo = data;
     renderInfoCard(data);
     showSection('info-card');
     showSection('download-section');
     updateFormatLabel();
+    setFooter('READY TO DOWNLOAD');
 
   } catch (e) {
     showError('Network error — is the server running?');
+    setFooter('ERROR');
   } finally {
     btn.classList.remove('loading');
-    btn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      Fetch`;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> FETCH`;
   }
 }
 
-// ── Render Info Card ───────────────────────────────────────────────────────
+// ── Render info card ───────────────────────────────────────────────────────
 function renderInfoCard(info) {
   const inner = document.getElementById('info-card-inner');
 
@@ -2133,13 +1711,11 @@ function renderInfoCard(info) {
     `;
   }
 
-  const typeLabel = info.is_playlist ? 'PLAYLIST' : 'VIDEO';
-
   let playlistHtml = '';
   if (info.is_playlist && info.entries && info.entries.length) {
     const rows = info.entries.map((e, i) => `
       <div class="playlist-entry" data-idx="${i}">
-        <label class="entry-checkbox-wrap" title="Include in download">
+        <label class="entry-checkbox-wrap">
           <input type="checkbox" class="entry-checkbox" data-url="${escHtml(e.url)}" data-idx="${i}" checked>
         </label>
         <span class="entry-num">${String(i + 1).padStart(2, '0')}</span>
@@ -2150,11 +1726,11 @@ function renderInfoCard(info) {
     const total = info.entries.length;
     playlistHtml = `
       <div class="playlist-header">
-        <label class="entry-checkbox-wrap" title="Select / deselect all">
+        <label class="entry-checkbox-wrap">
           <input type="checkbox" class="entry-checkbox" id="select-all-cb" checked>
         </label>
         <span class="playlist-count-label" id="playlist-count-label">${total} of ${total} selected</span>
-        <button class="playlist-select-btn" onclick="invertSelection()">Invert</button>
+        <button class="playlist-select-btn" onclick="invertSelection()">INVERT</button>
       </div>
       <div class="playlist-list" id="playlist-entry-list">${rows}</div>`;
   }
@@ -2163,7 +1739,7 @@ function renderInfoCard(info) {
     <div class="card-inner">
       ${thumb}
       <div class="card-body">
-        <div class="card-type">${typeLabel}</div>
+        <div class="card-type">${info.is_playlist ? 'PLAYLIST' : 'VIDEO'}</div>
         <div class="card-title">${escHtml(info.title)}</div>
         <div class="card-meta">${metaHtml}</div>
       </div>
@@ -2172,73 +1748,59 @@ function renderInfoCard(info) {
   `;
 }
 
-// ── Playlist checkbox helpers ─────────────────────────────────────────────
-
+// ── Playlist helpers ───────────────────────────────────────────────────────
 function updatePlaylistCountLabel() {
-  const all  = document.querySelectorAll('#playlist-entry-list .entry-checkbox');
+  const all     = document.querySelectorAll('#playlist-entry-list .entry-checkbox');
   const checked = document.querySelectorAll('#playlist-entry-list .entry-checkbox:checked');
-  const label = document.getElementById('playlist-count-label');
+  const label   = document.getElementById('playlist-count-label');
   const masterCb = document.getElementById('select-all-cb');
   if (!label || !masterCb) return;
-
   label.textContent = `${checked.length} of ${all.length} selected`;
-
-  // Sync master checkbox state
   masterCb.indeterminate = checked.length > 0 && checked.length < all.length;
   masterCb.checked = checked.length === all.length;
-
-  // Dim excluded rows
-  all.forEach(cb => {
-    cb.closest('.playlist-entry').classList.toggle('excluded', !cb.checked);
-  });
+  all.forEach(cb => { cb.closest('.playlist-entry').classList.toggle('excluded', !cb.checked); });
 }
 
 function getSelectedUrls() {
   const checked = document.querySelectorAll('#playlist-entry-list .entry-checkbox:checked');
   if (!checked.length) return [];
   const all = document.querySelectorAll('#playlist-entry-list .entry-checkbox');
-  // If everything is selected, send empty array → backend uses the playlist URL directly
   if (checked.length === all.length) return [];
   return Array.from(checked).map(cb => cb.dataset.url).filter(Boolean);
 }
 
 function invertSelection() {
-  document.querySelectorAll('#playlist-entry-list .entry-checkbox').forEach(cb => {
-    cb.checked = !cb.checked;
-  });
+  document.querySelectorAll('#playlist-entry-list .entry-checkbox').forEach(cb => { cb.checked = !cb.checked; });
   updatePlaylistCountLabel();
 }
 
-// Wire up master checkbox and individual checkboxes via event delegation
 document.addEventListener('change', e => {
   if (e.target.id === 'select-all-cb') {
-    document.querySelectorAll('#playlist-entry-list .entry-checkbox')
-      .forEach(cb => { cb.checked = e.target.checked; });
+    document.querySelectorAll('#playlist-entry-list .entry-checkbox').forEach(cb => { cb.checked = e.target.checked; });
     updatePlaylistCountLabel();
   } else if (e.target.matches('#playlist-entry-list .entry-checkbox')) {
     updatePlaylistCountLabel();
   }
 });
 
-// ── Start Download ─────────────────────────────────────────────────────────
+// ── Start download ─────────────────────────────────────────────────────────
 async function startDownload() {
   const url = document.getElementById('url-input').value.trim();
-  if (!url || !currentInfo) { showError('Please fetch video info first.'); return; }
+  if (!url || !currentInfo) { showError('Fetch video info first.'); return; }
 
   if (sseSource) { sseSource.close(); sseSource = null; }
-
   hideError();
   hideSection('save-section');
 
-  const btn   = document.getElementById('download-btn');
+  const btn    = document.getElementById('download-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Starting...';
+  btn.innerHTML = '<span class="spinner"></span> STARTING...';
 
   try {
     const clipStart = el('clip-start') ? el('clip-start').value.trim() : '';
     const clipEnd   = el('clip-end')   ? el('clip-end').value.trim()   : '';
 
-    const res  = await fetch('/api/download', {
+    const res = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2261,20 +1823,20 @@ async function startDownload() {
     if (!res.ok || data.error) {
       showError(data.error || 'Failed to start download.');
       btn.disabled = false;
-      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> START DOWNLOAD`;
       return;
     }
 
     currentTaskId = data.task_id;
     startTime     = Date.now();
-
     resetProgressUI();
     showSection('progress-section');
     startElapsedTimer();
     subscribeProgress(currentTaskId);
+    setFooter('DOWNLOADING...');
 
   } catch (e) {
-    showError('Network error — is the server running?');
+    showError('Network error.');
     btn.disabled = false;
   }
 }
@@ -2285,17 +1847,17 @@ function resetProgressUI() {
   setRing(0, false);
   setSegments(0, false);
 
-  el('progress-pct-large').textContent    = '0%';
-  el('progress-pct-large').className      = 'progress-pct-large';
-  el('stat-speed').textContent            = '—';
-  el('stat-eta').textContent              = '—';
-  el('stat-elapsed').textContent          = '0s';
-  el('stat-pct-small').textContent        = '0%';
-  el('progress-title').textContent        = (currentInfo && currentInfo.title) || '—';
-  el('ring-status-value').textContent     = 'Queued';
-  el('ring-status-sub').textContent       = 'Preparing download...';
-  el('progress-section-label').textContent = 'Downloading...';
-  el('status-elapsed-label').textContent  = '00:00';
+  el('progress-pct-large').textContent     = '0%';
+  el('progress-pct-large').className       = 'progress-pct-large';
+  el('stat-speed').textContent             = '—';
+  el('stat-eta').textContent               = '—';
+  el('stat-elapsed').textContent           = '0s';
+  el('stat-pct-small').textContent         = '0%';
+  el('progress-title').textContent         = (currentInfo && currentInfo.title) || '—';
+  el('ring-status-value').textContent      = 'QUEUED';
+  el('ring-status-sub').textContent        = 'Preparing download...';
+  el('progress-section-label').textContent = 'DOWNLOADING...';
+  el('status-elapsed-label').textContent   = '00:00';
 
   setStatusStyle('queued');
   setPhase('queued');
@@ -2308,7 +1870,7 @@ function resetProgressUI() {
   drawSpeedGraph();
 }
 
-// ── SSE Progress ───────────────────────────────────────────────────────────
+// ── SSE progress ───────────────────────────────────────────────────────────
 function subscribeProgress(taskId) {
   sseSource = new EventSource(`/api/progress/${taskId}`);
 
@@ -2319,13 +1881,14 @@ function subscribeProgress(taskId) {
     if (task.status === 'done') {
       sseSource.close();
       showDone(taskId, task);
-      fireNotification('VORTEX — Download Complete', task.title || 'Your file is ready to save.');
+      fireNotification('VORTEX — Download Complete', task.title || 'Your file is ready.');
     } else if (task.status === 'error') {
       sseSource.close();
       showError(task.error || 'Download failed.');
       hideSection('progress-section');
       resetDownloadBtn();
       stopElapsedTimer();
+      setFooter('ERROR');
     }
   };
 
@@ -2353,10 +1916,9 @@ async function pollStatus(taskId) {
   } catch {}
 }
 
-// ── Update Progress ────────────────────────────────────────────────────────
+// ── Update progress ────────────────────────────────────────────────────────
 function updateProgress(task) {
   const pct = task.progress || 0;
-
   setFill(pct, task.status === 'done');
   setRing(pct, task.status === 'done');
   setSegments(pct, task.status === 'done');
@@ -2369,7 +1931,6 @@ function updateProgress(task) {
   if (task.eta)   el('stat-eta').textContent   = task.eta;
   if (task.title) el('progress-title').textContent = task.title;
 
-  // Feed speed graph
   const bps = task.speed_bytes || 0;
   speedHistory.push(bps);
   if (speedHistory.length > MAX_SPEED_PTS) speedHistory.shift();
@@ -2378,46 +1939,39 @@ function updateProgress(task) {
   setStatusStyle(task.status);
   setPhase(task.status);
 
-  // Ring label
   const labels = {
-    queued:      ['Queued',      'Waiting to start...'],
-    downloading: ['Downloading', task.speed ? `Speed: ${task.speed}` : 'Pulling from servers...'],
-    processing:  ['Processing',  'Converting & muxing...'],
-    done:        ['Complete',    'File ready to save!'],
-    error:       ['Error',       task.error || 'Something went wrong'],
+    queued:      ['QUEUED',      'Waiting to start...'],
+    downloading: ['DOWNLOADING', task.speed ? `Speed: ${task.speed}` : 'Pulling from servers...'],
+    processing:  ['PROCESSING',  'Converting & muxing...'],
+    done:        ['COMPLETE',    'File ready to save!'],
+    error:       ['ERROR',       task.error || 'Something went wrong'],
   };
   const [sv, ss] = labels[task.status] || ['—', ''];
   el('ring-status-value').textContent = sv;
   el('ring-status-sub').textContent   = ss;
 
-  if (task.status === 'done' || task.status === 'processing') {
-    el('waveform-row').classList.add('done');
-  }
+  if (task.status === 'done' || task.status === 'processing') el('waveform-row').classList.add('done');
+  if (task.status === 'done') el('ring-svg').classList.add('done');
 
-  if (task.status === 'done') {
-    el('ring-svg').classList.add('done');
-  }
+  setFooter(task.status === 'downloading' ? `DOWNLOADING  ${Math.round(pct)}%  ${task.speed || ''}` : sv);
 }
 
-// ── Fill bar ───────────────────────────────────────────────────────────────
+// ── Fill / ring / segments ─────────────────────────────────────────────────
 function setFill(pct, isDone) {
   const fill = el('progress-fill');
   fill.style.width = `${pct}%`;
   isDone ? fill.classList.add('done') : fill.classList.remove('done');
 }
 
-// ── Ring ───────────────────────────────────────────────────────────────────
 function setRing(pct, isDone) {
-  const r             = 30;
-  const circumference = 2 * Math.PI * r; // ≈ 188.5
-  const offset        = circumference - (pct / 100) * circumference;
-  const ring          = el('ring-fill');
+  const circumference = 2 * Math.PI * 30;
+  const offset = circumference - (pct / 100) * circumference;
+  const ring = el('ring-fill');
   ring.style.strokeDasharray  = circumference;
   ring.style.strokeDashoffset = offset;
   isDone ? ring.classList.add('done') : ring.classList.remove('done');
 }
 
-// ── Segment bars ───────────────────────────────────────────────────────────
 function setSegments(pct, isDone) {
   const filled = Math.floor((pct / 100) * SEGMENTS);
   for (let i = 0; i < SEGMENTS; i++) {
@@ -2435,21 +1989,18 @@ function setSegments(pct, isDone) {
   }
 }
 
-// ── Status dot / text ──────────────────────────────────────────────────────
 function setStatusStyle(status) {
-  const dot   = el('status-dot-ring');
-  const txt   = el('status-text-main');
+  const dot = el('status-dot-ring');
+  const txt = el('status-text-main');
   dot.className = `status-dot-ring ${status}`;
   txt.className = `status-text-main ${status}`;
-  const labels  = { queued: 'Queued', downloading: 'Downloading', processing: 'Processing', done: 'Complete', error: 'Error' };
-  txt.textContent = labels[status] || status;
+  const labels = { queued: 'QUEUED', downloading: 'DOWNLOADING', processing: 'PROCESSING', done: 'COMPLETE', error: 'ERROR' };
+  txt.textContent = labels[status] || status.toUpperCase();
 }
 
-// ── Phase timeline ─────────────────────────────────────────────────────────
 function setPhase(status) {
   const order = ['queued', 'downloading', 'processing', 'done'];
   const idx   = order.indexOf(status);
-
   order.forEach((phase, i) => {
     const step = el(`phase-${phase}`);
     if (!step) return;
@@ -2471,44 +2022,33 @@ function startElapsedTimer() {
     el('stat-elapsed').textContent         = secs < 60 ? `${secs}s` : `${m}:${s}`;
   }, 1000);
 }
+function stopElapsedTimer() { if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; } }
 
-function stopElapsedTimer() {
-  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
-}
-
-// ── Show Done ──────────────────────────────────────────────────────────────
+// ── Show done ──────────────────────────────────────────────────────────────
 function showDone(taskId, task) {
   stopElapsedTimer();
-
-  setFill(100, true);
-  setRing(100, true);
-  setSegments(100, true);
+  setFill(100, true); setRing(100, true); setSegments(100, true);
   el('progress-pct-large').textContent = '100%';
   el('progress-pct-large').className   = 'progress-pct-large done';
   setStatusStyle('done');
   setPhase('done');
   el('progress-shell').classList.remove('active');
-  el('progress-section-label').textContent = 'Complete!';
+  el('progress-section-label').textContent = 'COMPLETE';
 
   setTimeout(() => {
     hideSection('progress-section');
-
-    // Playlist ZIPs already have a clean name; single files have a task_id prefix to strip
     const rawName = task.filename || '';
-    const displayName = rawName.endsWith('.zip')
-      ? rawName
-      : rawName.replace(/^[0-9a-f-]{8,}-[0-9a-f-]+_/, '');
-    el('save-btn').href             = `/api/file/${taskId}`;
+    const displayName = rawName.endsWith('.zip') ? rawName : rawName.replace(/^[0-9a-f-]{8,}-[0-9a-f-]+_/, '');
+    el('save-btn').href = `/api/file/${taskId}`;
     el('save-btn').setAttribute('download', displayName || 'download');
     el('save-filename').textContent = displayName || 'Ready to download';
 
     const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-    const m       = Math.floor(elapsed / 60).toString().padStart(2, '0');
-    const s       = (elapsed % 60).toString().padStart(2, '0');
-
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
     const isPlaylist = !!(currentInfo && currentInfo.is_playlist);
-    el('save-stat-format').textContent   = currentFormat.toUpperCase() + (isPlaylist ? ' ZIP' : '');
-    el('save-stat-quality').textContent  = currentQuality === 'best' ? 'Best' : currentQuality;
+    el('save-stat-format').textContent  = currentFormat.toUpperCase() + (isPlaylist ? ' ZIP' : '');
+    el('save-stat-quality').textContent = currentQuality === 'best' ? 'BEST' : currentQuality.toUpperCase();
     if (isPlaylist) {
       el('save-stat-duration-label').textContent = 'Tracks';
       el('save-stat-duration').textContent = currentInfo.count ? `${currentInfo.count}` : '—';
@@ -2516,32 +2056,31 @@ function showDone(taskId, task) {
       el('save-stat-duration-label').textContent = 'Duration';
       el('save-stat-duration').textContent = (currentInfo && currentInfo.duration) || '—';
     }
-    el('save-stat-time').textContent     = elapsed < 60 ? `${elapsed}s` : `${m}:${s}`;
-
+    el('save-stat-time').textContent = elapsed < 60 ? `${elapsed}s` : `${m}:${s}`;
     showSection('save-section');
     fireConfetti();
     resetDownloadBtn();
     recordHistory(task, currentFormat, currentQuality);
+    setFooter('FILE READY');
   }, 700);
 }
 
-// ── Confetti burst ─────────────────────────────────────────────────────────
+// ── Confetti ───────────────────────────────────────────────────────────────
 function fireConfetti() {
   const container = el('confetti-container');
   container.innerHTML = '';
-  const colors = ['#ff2525', '#ff6b2d', '#ffae00', '#00e676', '#e2e2e2', '#ff9a9a'];
-  for (let i = 0; i < 70; i++) {
+  const colors = ['#ffaa00', '#ff7700', '#00dd66', '#00ccff', '#e2e2e2', '#ff6666'];
+  for (let i = 0; i < 60; i++) {
     const piece = document.createElement('div');
-    piece.className              = 'confetti-piece';
-    piece.style.left             = `${Math.random() * 100}%`;
-    piece.style.top              = `${-10 + Math.random() * -30}px`;
-    piece.style.background       = colors[Math.floor(Math.random() * colors.length)];
-    piece.style.transform        = `rotate(${Math.random() * 360}deg)`;
-    piece.style.animationDelay   = `${Math.random() * 0.8}s`;
-    piece.style.animationDuration = `${1.4 + Math.random() * 0.8}s`;
-    piece.style.width            = `${4 + Math.random() * 6}px`;
-    piece.style.height           = `${6 + Math.random() * 10}px`;
-    piece.style.borderRadius     = Math.random() > 0.5 ? '50%' : '1px';
+    piece.className               = 'confetti-piece';
+    piece.style.left              = `${Math.random() * 100}%`;
+    piece.style.top               = `${-10 + Math.random() * -30}px`;
+    piece.style.background        = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.transform         = `rotate(${Math.random() * 360}deg)`;
+    piece.style.animationDelay    = `${Math.random() * .8}s`;
+    piece.style.animationDuration = `${1.4 + Math.random() * .8}s`;
+    piece.style.width             = `${3 + Math.random() * 5}px`;
+    piece.style.height            = `${5 + Math.random() * 8}px`;
     container.appendChild(piece);
   }
   setTimeout(() => { container.innerHTML = ''; }, 3000);
@@ -2551,10 +2090,7 @@ function fireConfetti() {
 function resetAll() {
   if (sseSource) { sseSource.close(); sseSource = null; }
   stopElapsedTimer();
-  currentInfo   = null;
-  currentTaskId = null;
-  startTime     = null;
-
+  currentInfo = null; currentTaskId = null; startTime = null;
   el('url-input').value = '';
   hideError();
   hideSection('info-card');
@@ -2563,29 +2099,28 @@ function resetAll() {
   hideSection('save-section');
   resetDownloadBtn();
   el('url-input').focus();
+  setFooter('READY');
 }
 
 function resetDownloadBtn() {
   const btn = el('download-btn');
   if (btn) {
     btn.disabled  = false;
-    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> START DOWNLOAD`;
   }
 }
 
-// ── UI Helpers ─────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 function el(id) { return document.getElementById(id); }
 
 function showSection(id) {
-  const e = el(id);
-  if (!e) return;
+  const e = el(id); if (!e) return;
   e.classList.add('visible');
   if (id !== 'info-card') e.style.display = 'block';
 }
 
 function hideSection(id) {
-  const e = el(id);
-  if (!e) return;
+  const e = el(id); if (!e) return;
   e.classList.remove('visible');
   if (id !== 'info-card') e.style.display = 'none';
 }
@@ -2602,103 +2137,76 @@ function hideError() {
 
 function escHtml(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Cancel download ───────────────────────────────────────────────────────
+function setFooter(msg) {
+  const f = el('footer-status');
+  if (f) f.textContent = msg;
+}
+
+// ── Cancel ─────────────────────────────────────────────────────────────────
 async function cancelDownload() {
   if (!currentTaskId) return;
-  try {
-    await fetch(`/api/cancel/${currentTaskId}`, { method: 'POST' });
-  } catch (_) {}
+  try { await fetch(`/api/cancel/${currentTaskId}`, { method: 'POST' }); } catch (_) {}
 }
 
-// ── Queue / active downloads display ──────────────────────────────────────
-function startQueuePoll() {
+// ── Queue polling ──────────────────────────────────────────────────────────
+function startQueuePoll()  {
   stopQueuePoll();
   queuePollTimer = setInterval(refreshQueue, 2000);
   refreshQueue();
 }
-
-function stopQueuePoll() {
-  if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; }
-}
+function stopQueuePoll() { if (queuePollTimer) { clearInterval(queuePollTimer); queuePollTimer = null; } }
 
 async function refreshQueue() {
-  try {
-    const res   = await fetch('/api/tasks');
-    const tasks = await res.json();
-    renderQueue(tasks);
-  } catch (_) {}
+  try { const res = await fetch('/api/tasks'); const tasks = await res.json(); renderQueue(tasks); } catch (_) {}
 }
 
 function renderQueue(tasks) {
   let panel = el('queue-panel');
   const entries = Object.entries(tasks).filter(([id]) => id !== currentTaskId);
-  if (!entries.length) {
-    if (panel) panel.style.display = 'none';
-    return;
-  }
+  if (!entries.length) { if (panel) panel.style.display = 'none'; return; }
 
   if (!panel) {
     panel = document.createElement('div');
     panel.id = 'queue-panel';
-    panel.style.cssText = 'margin-top:20px;';
+    panel.style.cssText = 'margin-top:12px;';
     const container = document.querySelector('.container');
     const footer    = document.querySelector('.footer');
     container.insertBefore(panel, footer || null);
   }
 
   const rows = entries.map(([id, t]) => {
-    const statusColor = {
-      queued: 'var(--text3)', downloading: 'var(--accent)',
-      processing: 'var(--accent3)', done: 'var(--success)', error: 'var(--accent)'
-    }[t.status] || 'var(--text2)';
-    const pct = Math.round(t.progress || 0);
-    return `
-      <div style="display:flex;align-items:center;gap:12px;padding:8px 16px;
-                  border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;">
-        <span style="color:${statusColor};text-transform:uppercase;letter-spacing:.08em;
-                     flex-shrink:0;min-width:80px;">${t.status}</span>
-        <span style="color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${escHtml(t.title || t.format?.toUpperCase() || 'Download')}
-        </span>
-        <span style="color:var(--text3);flex-shrink:0;">${pct}%</span>
-      </div>`;
+    const col = { queued:'var(--text3)', downloading:'var(--amber)', processing:'var(--cyan)', done:'var(--green)', error:'var(--red)' }[t.status] || 'var(--text2)';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:11px;">
+      <span style="color:${col};text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;min-width:80px;">${t.status}</span>
+      <span style="color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.title || t.format?.toUpperCase() || 'Download')}</span>
+      <span style="color:var(--text3);flex-shrink:0;">${Math.round(t.progress||0)}%</span>
+    </div>`;
   }).join('');
 
   panel.innerHTML = `
-    <div class="section-label">Active Queue</div>
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
-      ${rows}
-    </div>`;
+    <div class="sec-label">ACTIVE QUEUE</div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);overflow:hidden;">${rows}</div>`;
   panel.style.display = '';
 }
 
-// ── Browser notifications ──────────────────────────────────────────────────
+// ── Notifications ──────────────────────────────────────────────────────────
 function requestNotifPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
 }
-
 function fireNotification(title, body) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try {
-    new Notification(title, { body, icon: '' });
-  } catch (_) {}
+  try { new Notification(title, { body }); } catch (_) {}
 }
 
-// ── Theme toggle ──────────────────────────────────────────────────────────
+// ── Theme ──────────────────────────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('vortex-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
   const btn = el('theme-btn');
-  if (btn) btn.textContent = saved === 'light' ? '◑ Theme' : '◐ Theme';
+  if (btn) btn.textContent = saved === 'light' ? '[◑] THEME' : '[◐] THEME';
 }
 
 function toggleTheme() {
@@ -2707,10 +2215,10 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('vortex-theme', next);
   const btn = el('theme-btn');
-  if (btn) btn.textContent = next === 'light' ? '◑ Theme' : '◐ Theme';
+  if (btn) btn.textContent = next === 'light' ? '[◑] THEME' : '[◐] THEME';
 }
 
-// ── Clipboard paste ────────────────────────────────────────────────────────
+// ── Clipboard ──────────────────────────────────────────────────────────────
 async function pasteFromClipboard() {
   try {
     const text = await navigator.clipboard.readText();
@@ -2718,7 +2226,6 @@ async function pasteFromClipboard() {
     if (input && text.trim()) {
       input.value = text.trim();
       input.dispatchEvent(new Event('input'));
-      // Auto-fetch if it looks like a YouTube URL
       if (/youtube\.com|youtu\.be/i.test(text)) fetchInfo();
     }
   } catch (_) {
@@ -2730,73 +2237,60 @@ async function pasteFromClipboard() {
 function drawSpeedGraph() {
   const canvas = el('speed-canvas');
   if (!canvas) return;
-  const ctx    = canvas.getContext('2d');
-  const W      = canvas.offsetWidth || 600;
-  const H      = canvas.height = 44;
-  canvas.width = W;
+  const ctx = canvas.getContext('2d');
+  const W   = canvas.width = canvas.offsetWidth || 600;
+  const H   = canvas.height = 40;
   ctx.clearRect(0, 0, W, H);
-
   if (!speedHistory.length) return;
-  const max = Math.max(...speedHistory, 1);
-  const pts = speedHistory;
-  const step = W / Math.max(pts.length - 1, 1);
 
-  // Background grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  const max  = Math.max(...speedHistory, 1);
+  const step = W / Math.max(speedHistory.length - 1, 1);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,200,80,0.08)';
   ctx.lineWidth   = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = Math.round(H - (i / 4) * H) + 0.5;
+  for (let i = 0; i <= 3; i++) {
+    const y = Math.round(H - (i / 3) * H) + .5;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  // Gradient fill
+  // Fill
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(255,107,45,0.55)');
-  grad.addColorStop(1, 'rgba(255,37,37,0.05)');
-
+  grad.addColorStop(0, 'rgba(255,170,0,0.5)');
+  grad.addColorStop(1, 'rgba(255,100,0,0.04)');
   ctx.beginPath();
   ctx.moveTo(0, H);
-  pts.forEach((v, i) => {
-    const x = i * step;
-    const y = H - (v / max) * (H - 4);
-    i === 0 ? ctx.lineTo(x, y) : ctx.lineTo(x, y);
-  });
-  ctx.lineTo((pts.length - 1) * step, H);
+  speedHistory.forEach((v, i) => { ctx.lineTo(i * step, H - (v / max) * (H - 4)); });
+  ctx.lineTo((speedHistory.length - 1) * step, H);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
 
   // Line
   ctx.beginPath();
-  pts.forEach((v, i) => {
-    const x = i * step;
-    const y = H - (v / max) * (H - 4);
+  speedHistory.forEach((v, i) => {
+    const x = i * step, y = H - (v / max) * (H - 4);
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
-  ctx.strokeStyle = '#ff6b2d';
+  ctx.strokeStyle = 'var(--amber)';
   ctx.lineWidth   = 1.5;
   ctx.stroke();
 }
 
-// ── Format checker ────────────────────────────────────────────────────────
+// ── Format checker ─────────────────────────────────────────────────────────
 async function checkFormats() {
   const url = el('url-input').value.trim();
   if (!url) { showError('Fetch a URL first.'); return; }
   const btn = el('formats-btn');
-  btn.textContent = '...';
+  btn.textContent = 'CHECKING...';
   btn.disabled    = true;
   try {
-    const res  = await fetch('/api/formats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
+    const res  = await fetch('/api/formats', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
     const data = await res.json();
     renderFormatsPanel(data.formats || []);
-  } catch (_) {
-    showError('Could not fetch formats.');
-  } finally {
-    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Check Formats';
+  } catch (_) { showError('Could not fetch formats.'); }
+  finally {
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> CHECK FORMATS`;
     btn.disabled = false;
   }
 }
@@ -2804,75 +2298,52 @@ async function checkFormats() {
 function renderFormatsPanel(formats) {
   const panel = el('formats-panel');
   if (!formats.length) { panel.style.display = 'none'; return; }
-
-  const rows = formats.map(f => {
-    const size = f.filesize ? (f.filesize / 1048576).toFixed(1) + ' MB' : '?';
-    const type = f.has_video && f.has_audio ? '🎬' : f.has_video ? '📹' : '🔊';
-    return `<div style="display:flex;gap:10px;align-items:center;padding:7px 14px;
-                         border-bottom:1px solid var(--border);">
-      <span style="color:var(--text3);min-width:14px;">${type}</span>
-      <span style="color:var(--accent);min-width:40px;">${escHtml(f.ext)}</span>
-      <span style="color:var(--text);min-width:55px;">${escHtml(f.res)}${f.fps ? '@'+f.fps : ''}</span>
-      <span style="color:var(--text2);flex:1;">${escHtml(f.note || '')}</span>
+  panel.innerHTML = formats.map(f => {
+    const size = f.filesize ? (f.filesize/1048576).toFixed(1)+' MB' : '?';
+    const type = f.has_video && f.has_audio ? '▶' : f.has_video ? '▬' : '♪';
+    return `<div style="display:flex;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text3);min-width:12px;">${type}</span>
+      <span style="color:var(--amber);min-width:40px;">${escHtml(f.ext)}</span>
+      <span style="color:var(--text);min-width:55px;">${escHtml(f.res)}${f.fps?'@'+f.fps:''}</span>
+      <span style="color:var(--text2);flex:1;">${escHtml(f.note||'')}</span>
       <span style="color:var(--text3);">${size}</span>
     </div>`;
   }).join('');
-  panel.innerHTML = rows;
   panel.style.display = '';
 }
 
-// ── yt-dlp update ─────────────────────────────────────────────────────────
+// ── yt-dlp update ──────────────────────────────────────────────────────────
 async function updateYtDlp() {
   const btn = el('update-btn');
-  btn.textContent  = '↻ Updating...';
-  btn.disabled     = true;
+  btn.textContent = '[↻] UPDATING...';
+  btn.disabled    = true;
   try {
     const res  = await fetch('/api/update-ytdlp', { method: 'POST' });
     const data = await res.json();
-    if (data.ok) {
-      btn.textContent = '✓ Updated';
-      btn.style.color = 'var(--success)';
-    } else {
-      showError('Update failed: ' + (data.error || 'unknown error'));
-      btn.textContent = '↻ Update yt-dlp';
-    }
-  } catch (_) {
-    showError('Update request failed.');
-    btn.textContent = '↻ Update yt-dlp';
-  } finally {
+    if (data.ok) { btn.textContent = '[✓] UPDATED'; btn.style.color = 'var(--green2)'; }
+    else { showError('Update failed: ' + (data.error || 'unknown')); btn.textContent = '[↻] UPDATE YT-DLP'; }
+  } catch (_) { showError('Update request failed.'); btn.textContent = '[↻] UPDATE YT-DLP'; }
+  finally {
     btn.disabled = false;
-    setTimeout(() => {
-      btn.textContent = '↻ Update yt-dlp';
-      btn.style.color = '';
-    }, 4000);
+    setTimeout(() => { btn.textContent = '[↻] UPDATE YT-DLP'; btn.style.color = ''; }, 4000);
   }
 }
 
-// ── Download history ──────────────────────────────────────────────────────
+// ── History ────────────────────────────────────────────────────────────────
 function recordHistory(task, fmt, quality) {
-  downloadHistory.unshift({
-    title:   task.title  || 'Unknown',
-    fmt:     fmt.toUpperCase(),
-    quality: quality,
-    time:    new Date().toLocaleTimeString(),
-  });
+  downloadHistory.unshift({ title: task.title||'Unknown', fmt: fmt.toUpperCase(), quality, time: new Date().toLocaleTimeString() });
   if (downloadHistory.length > 50) downloadHistory.pop();
   renderHistory('');
   el('history-panel').style.display = '';
 }
 
-function filterHistory(q) {
-  renderHistory(q.toLowerCase());
-}
+function filterHistory(q) { renderHistory(q.toLowerCase()); }
 
 function renderHistory(query) {
-  const list    = el('history-list');
-  if (!list) return;
-  const entries = downloadHistory.filter(h =>
-    !query || h.title.toLowerCase().includes(query)
-  );
+  const list = el('history-list'); if (!list) return;
+  const entries = downloadHistory.filter(h => !query || h.title.toLowerCase().includes(query));
   if (!entries.length) {
-    list.innerHTML = '<div style="padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--text3);">No results</div>';
+    list.innerHTML = '<div style="padding:10px 14px;font-size:11px;color:var(--text3);">No results</div>';
     return;
   }
   list.innerHTML = entries.map(h => `
@@ -2880,41 +2351,32 @@ function renderHistory(query) {
       <span class="hist-fmt">${escHtml(h.fmt)}</span>
       <span class="hist-title" title="${escHtml(h.title)}">${escHtml(h.title)}</span>
       <span class="hist-time">${escHtml(h.time)}</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ── Cookie management ────────────────────────────────────────────────────
+// ── Cookie management ──────────────────────────────────────────────────────
 let cookiePanelOpen = true;
 
 async function initCookieStatus() {
-  try {
-    const res  = await fetch('/api/cookies/status');
-    const data = await res.json();
-    setCookieStatus(data);
-  } catch (_) {}
+  try { const res = await fetch('/api/cookies/status'); const data = await res.json(); setCookieStatus(data); } catch (_) {}
 }
 
 function setCookieStatus(data) {
-  const dot  = el('cookie-status-dot');
-  const txt  = el('cookie-status-text');
-  const clr  = el('cookie-clear-btn');
+  const dot = el('cookie-status-dot'), txt = el('cookie-status-text'), clr = el('cookie-clear-btn');
   if (!dot || !txt) return;
-
   if (data.active) {
-    dot.style.background = 'var(--success)';
-    const src  = data.source === 'uploaded' ? 'User-uploaded' : 'Env file';
-    const size = data.size ? ` — ${(data.size / 1024).toFixed(1)} KB` : '';
-    txt.textContent  = `${src} cookies active${size}`;
-    txt.style.color  = 'var(--success)';
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 5px var(--green)';
+    txt.textContent      = `${data.source === 'uploaded' ? 'USER' : 'ENV'} COOKIES ACTIVE${data.size ? '  ' + (data.size/1024).toFixed(1) + ' KB' : ''}`;
+    txt.style.color      = 'var(--green)';
     if (clr) clr.style.display = '';
-    // Update drop zone text
     const dz = el('cookie-drop-zone');
-    if (dz) dz.style.borderColor = 'var(--success)';
+    if (dz) dz.style.borderColor = 'var(--green)';
   } else {
     dot.style.background = 'var(--text3)';
-    txt.textContent = 'No cookies loaded — age-restricted videos may fail';
-    txt.style.color = 'var(--text3)';
+    dot.style.boxShadow  = '';
+    txt.textContent      = 'NO COOKIES — age-restricted videos may fail';
+    txt.style.color      = 'var(--text3)';
     if (clr) clr.style.display = 'none';
   }
 }
@@ -2928,34 +2390,24 @@ function handleCookieDrop(event) {
 
 async function handleCookieFile(file) {
   if (!file) return;
+  if (!file.name.endsWith('.txt')) { showError('Cookie file must be a .txt (Netscape format).'); return; }
   const dz = el('cookie-drop-zone');
-
-  if (!file.name.endsWith('.txt')) {
-    showError('Cookie file must be a .txt file in Netscape format.');
-    return;
-  }
-
-  dz.style.borderColor = 'var(--accent3)';
+  dz.style.borderColor = 'var(--amber)';
   const statusTxt = el('cookie-status-text');
-  if (statusTxt) { statusTxt.textContent = 'Uploading...'; statusTxt.style.color = 'var(--accent3)'; }
-
+  if (statusTxt) { statusTxt.textContent = 'UPLOADING...'; statusTxt.style.color = 'var(--amber)'; }
   const form = new FormData();
   form.append('cookies', file);
-
   try {
-    const res  = await fetch('/api/cookies/upload', { method: 'POST', body: form });
+    const res = await fetch('/api/cookies/upload', { method: 'POST', body: form });
     const data = await res.json();
     if (data.ok) {
       setCookieStatus({ active: true, source: 'uploaded', size: data.size });
       dz.querySelector('div:nth-child(2)').textContent = `✓ ${file.name} loaded`;
     } else {
-      showError(data.error || 'Cookie upload failed.');
-      dz.style.borderColor = 'var(--accent)';
-      if (statusTxt) { statusTxt.textContent = 'Upload failed'; statusTxt.style.color = 'var(--accent)'; }
+      showError(data.error || 'Upload failed.');
+      dz.style.borderColor = 'var(--red)';
     }
-  } catch (_) {
-    showError('Cookie upload request failed.');
-  }
+  } catch (_) { showError('Upload request failed.'); }
 }
 
 async function clearCookies() {
@@ -2963,11 +2415,7 @@ async function clearCookies() {
     await fetch('/api/cookies/clear', { method: 'POST' });
     setCookieStatus({ active: false });
     const dz = el('cookie-drop-zone');
-    if (dz) {
-      dz.style.borderColor = '';
-      dz.querySelector('div:nth-child(2)').textContent = 'Drop your cookies.txt here or click to browse';
-    }
-    // Reset file input so same file can be re-uploaded
+    if (dz) { dz.style.borderColor = ''; dz.querySelector('div:nth-child(2)').textContent = 'Drop cookies.txt here or click to browse'; }
     const inp = el('cookie-file-input');
     if (inp) inp.value = '';
   } catch (_) {}
@@ -2978,12 +2426,11 @@ function toggleCookiePanel() {
   const dz  = el('cookie-drop-zone');
   const btn = el('cookie-panel').querySelector('button');
   if (dz) dz.style.display = cookiePanelOpen ? '' : 'none';
-  if (btn) btn.textContent = cookiePanelOpen ? 'Hide ▲' : 'Show ▼';
+  if (btn) btn.textContent = cookiePanelOpen ? 'HIDE ▲' : 'SHOW ▼';
 }
 
 // ── Icon SVGs ──────────────────────────────────────────────────────────────
 const svgAttrs = `width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
-
 function iconClock()   { return `<svg ${svgAttrs}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`; }
 function iconChannel() { return `<svg ${svgAttrs}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
 function iconEye()     { return `<svg ${svgAttrs}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
