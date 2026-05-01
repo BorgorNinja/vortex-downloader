@@ -4,336 +4,402 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VORTEX Downloader</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Trebuchet+MS:wght@400;700&family=Arial&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --bg:       #080b0a;
-  --bg2:      #0d110f;
-  --bg3:      #121812;
-  --bg4:      #182018;
-  --border:   #1e2a1e;
-  --border2:  #253525;
-  --border3:  #2f422f;
-  --amber:    #ffaa00;
-  --amber2:   #ff7700;
-  --green:    #00dd66;
-  --green2:   #00ff88;
-  --red:      #ff2222;
-  --cyan:     #00ccff;
-  --text:     #d4e8d4;
-  --text2:    #7a9a7a;
-  --text3:    #3d5a3d;
-  --mono:     'Share Tech Mono', 'Courier New', monospace;
-  --display:  'VT323', monospace;
-  --sans:     'Barlow', sans-serif;
-  --radius:   2px;
-  --inset:    inset 0 1px 4px rgba(0,0,0,0.7);
-  --panel-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  /* 2009 web palette */
+  --page-bg:    #e8e8e8;
+  --body-bg:    #ffffff;
+  --panel-bg:   #ffffff;
+  --panel-head: #f0f0f0;
+  --panel-head2:#dcdcdc;
+  --border:     #c8c8c8;
+  --border-d:   #aaaaaa;
+  --blue:       #1a5fa8;
+  --blue-h:     #1249870;
+  --blue-lite:  #e8f0fb;
+  --blue-d:     #0d3d74;
+  --orange:     #e07800;
+  --orange-h:   #f08c00;
+  --green-btn:  #3a8a3a;
+  --green-h:    #2d722d;
+  --red:        #cc2222;
+  --red-lite:   #fff0f0;
+  --text:       #222222;
+  --text2:      #555555;
+  --text3:      #888888;
+  --text-inv:   #ffffff;
+  --link:       #1a5fa8;
+  --success:    #2a7a2a;
+  --sans:       Arial, Helvetica, sans-serif;
+  --radius:     4px;
+  --radius-lg:  6px;
+  --shadow:     0 1px 3px rgba(0,0,0,0.18), 0 1px 1px rgba(0,0,0,0.1);
+  --shadow-lg:  0 2px 6px rgba(0,0,0,0.22);
 }
 
-[data-theme="light"] {
-  --bg:    #e8ede8;
-  --bg2:   #f0f5f0;
-  --bg3:   #dce8dc;
-  --bg4:   #c8d8c8;
-  --border:#b0c8b0;
-  --border2:#94a894;
-  --border3:#7a927a;
-  --text:  #1a2a1a;
-  --text2: #3a5a3a;
-  --text3: #6a8a6a;
+/* ── Light / Dark toggle ── */
+[data-theme="dark"] {
+  --page-bg:    #1a1a1a;
+  --body-bg:    #242424;
+  --panel-bg:   #2c2c2c;
+  --panel-head: #353535;
+  --panel-head2:#2a2a2a;
+  --border:     #444;
+  --border-d:   #555;
+  --blue:       #4a8fd4;
+  --blue-lite:  #1a2f48;
+  --blue-d:     #2d6aab;
+  --orange:     #e07800;
+  --orange-h:   #f08c00;
+  --text:       #e8e8e8;
+  --text2:      #aaa;
+  --text3:      #666;
+  --text-inv:   #ffffff;
+  --link:       #6baee0;
+  --success:    #4aaa4a;
+  --red-lite:   #3a1a1a;
 }
-[data-theme="light"] body::after { opacity: .08; }
 
 html { scroll-behavior: smooth; }
 
-/* ── Body + scanlines ── */
 body {
-  background: var(--bg);
+  background: var(--page-bg);
   color: var(--text);
-  font-family: var(--mono);
-  font-size: 14px;
+  font-family: var(--sans);
+  font-size: 13px;
   line-height: 1.5;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
-/* Scanline overlay */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.08) 2px,
-    rgba(0,0,0,0.08) 4px
-  );
-  pointer-events: none;
-  z-index: 999;
-}
-
-/* Subtle green phosphor glow bg */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(0,200,80,0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Layout ── */
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 860px;
+/* ── Layout wrapper ── */
+#wrapper {
+  max-width: 880px;
   margin: 0 auto;
-  padding: 0 16px 80px;
+  padding: 0 10px 70px;
 }
 
-/* ── Panel (the core UI primitive) ── */
-.panel {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  box-shadow: var(--panel-shadow), inset 0 0 0 1px rgba(0,180,60,0.04);
-  margin-bottom: 12px;
-}
-
-.panel-title {
-  background: linear-gradient(180deg, var(--bg4) 0%, var(--bg3) 100%);
-  border-bottom: 1px solid var(--border2);
-  padding: 5px 12px;
+/* ────────────────────────────────────────
+   HEADER — dark blue gradient bar
+──────────────────────────────────────── */
+#site-header {
+  background: linear-gradient(180deg, #2a5fa8 0%, #1a3f7a 60%, #122c5a 100%);
+  border-bottom: 2px solid #0d1e42;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  user-select: none;
+  height: 56px;
+  margin-bottom: 12px;
 }
 
-.panel-title-text {
-  font-family: var(--mono);
+.site-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.logo-text {
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 12px rgba(100,160,255,0.4);
+  letter-spacing: 2px;
+}
+
+.logo-tag {
   font-size: 11px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--amber);
+  color: #a0c0e8;
+  font-style: italic;
+  letter-spacing: 0;
+}
+
+.header-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.panel-title-text::before {
-  content: '■';
-  font-size: 8px;
-  color: var(--amber2);
-}
-
-.panel-body { padding: 14px 16px; }
-
-/* ── Tooltip ── */
-[data-tip] { position: relative; cursor: help; }
-[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg4);
-  border: 1px solid var(--border2);
-  color: var(--amber);
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 4px 8px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-  z-index: 200;
-}
-[data-tip]:hover::after { opacity: 1; }
-
-/* ── Header ── */
-.header {
-  padding: 28px 0 20px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--border2);
-  margin-bottom: 18px;
-}
-
-.logo-wrap {}
-
-.logo-eyebrow {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .3em;
-  color: var(--green);
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-
-.logo {
-  font-family: var(--display);
-  font-size: clamp(56px, 10vw, 96px);
-  line-height: .9;
-  color: var(--amber);
-  text-shadow: 0 0 20px rgba(255,170,0,.3), 2px 2px 0 rgba(0,0,0,.5);
-  letter-spacing: .04em;
-}
-
-.logo span { color: var(--green2); text-shadow: 0 0 20px rgba(0,255,136,.3), 2px 2px 0 rgba(0,0,0,.5); }
-
-.header-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  padding-bottom: 4px;
-}
-
-.badge {
+.header-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  background: var(--bg3);
+  gap: 5px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #c8ddf5;
 }
 
-.badge .dot {
-  width: 5px; height: 5px;
-  background: var(--green);
+.header-badge .dot {
+  width: 6px; height: 6px;
+  background: #44dd88;
   border-radius: 50%;
-  box-shadow: 0 0 5px var(--green);
-  animation: blink 2s step-start infinite;
+  box-shadow: 0 0 4px #44dd88;
+  animation: blink 2.5s step-start infinite;
 }
 
-/* ── URL section ── */
-.url-row {
+/* ── Toolbar (sub-nav bar) ── */
+#toolbar {
+  background: linear-gradient(180deg, #f8f8f8 0%, #ebebeb 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 12px;
   display: flex;
+  align-items: center;
   gap: 6px;
-  margin-bottom: 0;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
 }
 
-.url-input {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  box-shadow: var(--inset);
-  color: var(--green2);
-  font-family: var(--mono);
-  font-size: 13px;
-  padding: 10px 14px;
-  outline: none;
-  caret-color: var(--green2);
-  transition: border-color .15s, box-shadow .15s;
-}
-.url-input::placeholder { color: var(--text3); }
-.url-input:focus {
-  border-color: var(--green);
-  box-shadow: var(--inset), 0 0 8px rgba(0,200,80,.15);
+.toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
-/* ── Buttons ── */
+/* ────────────────────────────────────────
+   PANELS
+──────────────────────────────────────── */
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.panel-head {
+  background: linear-gradient(180deg, var(--panel-head) 0%, var(--panel-head2) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-head-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-head-title::before {
+  content: '';
+  width: 3px; height: 14px;
+  background: var(--blue);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.panel-body { padding: 12px 14px; }
+
+/* ── Section label ── */
+.sec-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sec-label-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+/* ────────────────────────────────────────
+   BUTTONS — classic glossy Web 2.0
+──────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  font-weight: 400;
-  padding: 0 18px;
-  border: 1px solid var(--border2);
+  gap: 5px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0 14px;
+  height: 28px;
+  border-radius: var(--radius);
+  border: 1px solid;
   cursor: pointer;
-  transition: all .12s;
   white-space: nowrap;
-  height: 42px;
-  background: var(--bg3);
-  color: var(--text2);
-  box-shadow: 0 1px 0 var(--border3), inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-.btn:hover {
-  background: var(--bg4);
-  border-color: var(--border3);
-  color: var(--text);
-}
-.btn:active { box-shadow: var(--inset); transform: translateY(1px); }
-.btn.loading { pointer-events: none; color: var(--text3); }
-
-.btn-fetch {
-  background: var(--bg3);
-  border-color: var(--border3);
-  color: var(--text2);
-}
-
-.btn-amber {
-  border-color: var(--amber2);
-  color: var(--amber);
-  background: rgba(255,170,0,0.07);
-}
-.btn-amber:hover { background: rgba(255,170,0,0.15); border-color: var(--amber); color: var(--amber); }
-
-.btn-green {
-  border-color: var(--green);
-  color: var(--green);
-  background: rgba(0,200,80,0.07);
-}
-.btn-green:hover { background: rgba(0,200,80,0.15); }
-
-.btn-download {
-  background: linear-gradient(180deg, rgba(255,170,0,0.18) 0%, rgba(255,120,0,0.12) 100%);
-  border: 1px solid var(--amber2);
-  color: var(--amber);
-  min-width: 180px;
-  height: 44px;
-  font-size: 12px;
-  letter-spacing: .18em;
-  box-shadow: 0 1px 0 rgba(255,120,0,0.3), inset 0 1px 0 rgba(255,220,0,0.08);
-  text-shadow: 0 0 10px rgba(255,170,0,0.4);
-}
-.btn-download:hover {
-  background: linear-gradient(180deg, rgba(255,170,0,0.28) 0%, rgba(255,120,0,0.22) 100%);
-  box-shadow: 0 0 14px rgba(255,150,0,0.3), 0 1px 0 rgba(255,120,0,0.3);
-  color: var(--amber2);
-}
-.btn-download:disabled { opacity: .35; cursor: not-allowed; transform: none; }
-
-.btn-save {
-  background: linear-gradient(180deg, rgba(0,220,100,0.18) 0%, rgba(0,160,60,0.12) 100%);
-  border: 1px solid var(--green);
-  color: var(--green2);
-  font-weight: 400;
-  min-width: 180px;
-  height: 44px;
-  font-size: 12px;
-  letter-spacing: .18em;
   text-decoration: none;
-  box-shadow: 0 1px 0 rgba(0,150,60,0.3), inset 0 1px 0 rgba(0,255,100,0.06);
-  text-shadow: 0 0 10px rgba(0,220,100,0.4);
+  transition: background .1s, box-shadow .1s;
+  line-height: 1;
 }
-.btn-save:hover {
-  background: linear-gradient(180deg, rgba(0,220,100,0.28) 0%, rgba(0,160,60,0.22) 100%);
-  box-shadow: 0 0 14px rgba(0,200,80,0.3), 0 1px 0 rgba(0,150,60,0.3);
+.btn:active { transform: translateY(1px); box-shadow: none !important; }
+.btn.loading { opacity: .7; pointer-events: none; }
+
+/* Default gray button */
+.btn-gray {
+  background: linear-gradient(180deg, #f8f8f8 0%, #e0e0e0 100%);
+  border-color: #aaa;
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8);
 }
+.btn-gray:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #ebebeb 100%);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Blue primary button */
+.btn-blue {
+  background: linear-gradient(180deg, #4a85cc 0%, #1a5fa8 50%, #144e8c 100%);
+  border-color: #0d3d74;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-blue:hover {
+  background: linear-gradient(180deg, #5a95dc 0%, #2a6fb8 50%, #1a5ea0 100%);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Orange action button */
+.btn-orange {
+  background: linear-gradient(180deg, #f5a030 0%, #e07800 50%, #c86400 100%);
+  border-color: #a05000;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-orange:hover {
+  background: linear-gradient(180deg, #f5b040 0%, #f08800 50%, #d07400 100%);
+}
+
+/* Green success button */
+.btn-green {
+  background: linear-gradient(180deg, #5aaa5a 0%, #3a8a3a 50%, #2d722d 100%);
+  border-color: #1d521d;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.btn-green:hover { background: linear-gradient(180deg, #6aba6a 0%, #4a9a4a 50%, #3a823a 100%); }
+
+/* Big download button */
+.btn-download {
+  height: 38px;
+  font-size: 13px;
+  padding: 0 22px;
+  background: linear-gradient(180deg, #f5a030 0%, #e07000 55%, #c86000 100%);
+  border-color: #904800;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  border-radius: 5px;
+}
+.btn-download:hover { background: linear-gradient(180deg, #f5b040 0%, #f08000 55%, #d87000 100%); }
+.btn-download:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* Big save button */
+.btn-save {
+  height: 38px;
+  font-size: 13px;
+  padding: 0 22px;
+  background: linear-gradient(180deg, #5aaa5a 0%, #3a8a3a 55%, #2d722d 100%);
+  border-color: #1d521d;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  border-radius: 5px;
+  text-decoration: none;
+}
+.btn-save:hover { background: linear-gradient(180deg, #6aba6a 0%, #4a9a4a 55%, #3a823a 100%); }
 
 /* ── Toggle buttons ── */
+.toggle-group { display: flex; gap: 0; }
+.toggle-btn {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 11px;
+  border: 1px solid var(--border-d);
+  background: linear-gradient(180deg, #f8f8f8 0%, #e4e4e4 100%);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background .1s;
+  margin-right: -1px;
+  position: relative;
+}
+.toggle-btn:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.toggle-btn:last-child  { border-radius: 0 var(--radius) var(--radius) 0; margin-right: 0; }
+.toggle-btn:only-child  { border-radius: var(--radius); }
+.toggle-btn:hover { background: linear-gradient(180deg, #ffffff 0%, #eeeeee 100%); color: var(--text); z-index: 1; }
+
+.toggle-btn.active {
+  background: linear-gradient(180deg, #4a85cc 0%, #1a5fa8 100%);
+  border-color: #0d3d74;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  z-index: 2;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.toggle-btn.active-mp3 {
+  background: linear-gradient(180deg, #5aaa5a 0%, #2a7a2a 100%);
+  border-color: #1a5a1a;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+.toggle-btn.active-gif {
+  background: linear-gradient(180deg, #c060d0 0%, #883098 100%);
+  border-color: #5a1068;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+
+/* ── URL Input ── */
+.url-row { display: flex; gap: 6px; }
+
+.url-input {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--border-d);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.12);
+  transition: border-color .15s, box-shadow .15s;
+}
+.url-input::placeholder { color: #aaa; }
+.url-input:focus {
+  border-color: var(--blue);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1), 0 0 0 2px rgba(26,95,168,0.18);
+}
+
+/* ── Options row ── */
 .options-row {
   display: flex;
-  gap: 20px;
+  gap: 18px;
   flex-wrap: wrap;
   align-items: flex-start;
 }
@@ -341,73 +407,49 @@ body::after {
 .option-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
-.option-group-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
-
-.toggle-group { display: flex; gap: 4px; }
-
-.toggle-btn {
-  font-family: var(--mono);
+.option-label {
   font-size: 11px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  padding: 5px 13px;
-  border: 1px solid var(--border2);
-  background: var(--bg);
+  font-weight: bold;
   color: var(--text2);
-  cursor: pointer;
-  transition: all .1s;
-  box-shadow: 0 1px 0 var(--border3), inset 0 1px 0 rgba(255,255,255,0.02);
+  text-transform: uppercase;
+  letter-spacing: .05em;
 }
-.toggle-btn:hover { border-color: var(--border3); color: var(--text); background: var(--bg3); }
-.toggle-btn.active     { background: rgba(255,170,0,.12); border-color: var(--amber); color: var(--amber); box-shadow: 0 0 8px rgba(255,150,0,.2); }
-.toggle-btn.active-mp3 { background: rgba(0,200,200,.1);  border-color: var(--cyan);  color: var(--cyan);  box-shadow: 0 0 8px rgba(0,200,200,.2); }
-.toggle-btn.active-gif { background: rgba(0,200,80,.1);   border-color: var(--green); color: var(--green); box-shadow: 0 0 8px rgba(0,200,80,.2); }
 
-/* ── Info Card ── */
+/* ── Info card ── */
 #info-card {
   display: none;
-  margin: 12px 0;
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity .3s, transform .3s;
+  transform: translateY(8px);
+  transition: opacity .25s, transform .25s;
 }
 #info-card.visible { display: block; opacity: 1; transform: translateY(0); }
 
-.card { background: var(--bg2); border: 1px solid var(--border2); }
 .card-inner { display: flex; gap: 0; }
 
 .card-thumb {
   flex-shrink: 0;
-  width: 160px; height: 96px;
+  width: 168px; height: 96px;
   object-fit: cover;
   display: block;
-  filter: brightness(.85) saturate(.8);
-  border-right: 1px solid var(--border2);
+  border-right: 1px solid var(--border);
 }
 .card-thumb-placeholder {
   flex-shrink: 0;
-  width: 160px; height: 96px;
-  background: var(--bg3);
+  width: 168px; height: 96px;
+  background: #ddd;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text3);
-  font-family: var(--display);
-  font-size: 36px;
-  border-right: 1px solid var(--border2);
+  color: #aaa;
+  font-size: 32px;
+  border-right: 1px solid var(--border);
 }
 
 .card-body {
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -417,316 +459,282 @@ body::after {
 }
 
 .card-type {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: .25em;
+  font-size: 10px;
+  font-weight: bold;
   text-transform: uppercase;
-  color: var(--amber);
+  letter-spacing: .1em;
+  color: var(--blue);
+  background: var(--blue-lite);
+  border: 1px solid #c0d4f0;
+  border-radius: 2px;
+  padding: 1px 6px;
+  display: inline-block;
+  width: fit-content;
 }
 
 .card-title {
-  font-family: var(--mono);
   font-size: 14px;
+  font-weight: bold;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.card-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+.card-meta { display: flex; gap: 12px; flex-wrap: wrap; }
 
 .meta-item {
-  font-family: var(--mono);
   font-size: 11px;
   color: var(--text2);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
-.meta-item svg { opacity: .5; flex-shrink: 0; }
+.meta-item svg { color: var(--text3); flex-shrink: 0; }
 
 /* ── Playlist ── */
 .playlist-list {
   border-top: 1px solid var(--border);
   max-height: 200px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border2) transparent;
 }
-
 .playlist-entry {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 16px;
-  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  padding: 5px 12px;
+  border-bottom: 1px solid #efefef;
   transition: background .1s;
 }
 .playlist-entry:last-child { border-bottom: none; }
-.playlist-entry:hover { background: var(--bg3); }
-.playlist-entry.excluded { opacity: .3; }
+.playlist-entry:hover { background: var(--blue-lite); }
+.playlist-entry.excluded { opacity: .35; }
 
 .playlist-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 16px;
+  gap: 8px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg3);
+  background: #f8f8f8;
 }
-.playlist-count-label { flex: 1; font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.playlist-count-label { flex: 1; font-size: 11px; color: var(--text2); }
 .playlist-select-btn {
-  font-size: 10px; font-family: var(--mono); color: var(--amber);
-  background: none; border: none; cursor: pointer; padding: 2px 6px;
-  text-transform: uppercase; letter-spacing: .06em;
+  font-size: 11px; font-family: var(--sans); color: var(--link);
+  background: none; border: none; cursor: pointer; padding: 2px 4px;
 }
-.playlist-select-btn:hover { background: rgba(255,170,0,0.1); }
+.playlist-select-btn:hover { text-decoration: underline; }
 
-.entry-checkbox-wrap { flex-shrink: 0; display: flex; align-items: center; }
+.entry-checkbox-wrap { flex-shrink: 0; }
 .entry-checkbox {
   appearance: none; -webkit-appearance: none;
   width: 13px; height: 13px;
-  border: 1px solid var(--border2);
-  background: var(--bg);
+  border: 1px solid #aaa;
+  background: #fff;
   cursor: pointer;
+  border-radius: 2px;
   position: relative;
-  transition: border-color .1s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
-.entry-checkbox:checked { background: var(--amber); border-color: var(--amber); }
+.entry-checkbox:checked {
+  background: var(--blue);
+  border-color: var(--blue-d);
+}
 .entry-checkbox:checked::after {
   content: '';
   position: absolute;
   left: 3px; top: 0px;
   width: 4px; height: 8px;
-  border: 2px solid var(--bg);
+  border: 2px solid #fff;
   border-top: none; border-left: none;
   transform: rotate(45deg);
 }
-.entry-checkbox:hover { border-color: var(--amber); }
 
-.entry-num { font-family: var(--mono); font-size: 10px; color: var(--text3); width: 22px; text-align: right; flex-shrink: 0; }
+.entry-num { font-size: 11px; color: var(--text3); width: 22px; text-align: right; flex-shrink: 0; }
 .entry-title { flex: 1; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.entry-duration { font-family: var(--mono); font-size: 10px; color: var(--text3); flex-shrink: 0; }
+.entry-duration { font-size: 11px; color: var(--text3); flex-shrink: 0; }
 
 /* ── Download section ── */
-#download-section { display: none; margin-top: 12px; }
+#download-section { display: none; }
 #download-section.visible { display: block; }
 .download-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* ── Progress section ── */
-#progress-section { display: none; margin-top: 12px; }
+#progress-section { display: none; }
 #progress-section.visible { display: block; }
 
 .progress-shell {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  box-shadow: var(--panel-shadow);
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
   overflow: hidden;
-  position: relative;
 }
-
-/* Amber LED strip at top when active */
-.progress-shell::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--amber) 50%, transparent 100%);
-  opacity: 0;
-  transition: opacity .4s;
-}
-.progress-shell.active::before { opacity: 1; }
 
 /* ── Progress header ── */
 .progress-header {
-  padding: 12px 16px 10px;
+  background: linear-gradient(180deg, #f8f8f8 0%, #ebebeb 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--bg3) 0%, var(--bg2) 100%);
 }
 
 .progress-title-wrap { flex: 1; overflow: hidden; }
-.progress-label { font-family: var(--mono); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
-.progress-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 2px; }
+.progress-title { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
 
 .progress-pct-large {
-  font-family: var(--display);
-  font-size: 52px;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-size: 42px;
+  font-weight: bold;
   line-height: 1;
-  letter-spacing: .04em;
-  color: var(--amber);
-  text-shadow: 0 0 16px rgba(255,150,0,.35);
-  transition: color .3s;
+  color: var(--blue);
   flex-shrink: 0;
-  min-width: 90px;
+  min-width: 80px;
   text-align: right;
+  transition: color .3s;
 }
-.progress-pct-large.done { color: var(--green2); text-shadow: 0 0 16px rgba(0,220,100,.35); }
+.progress-pct-large.done { color: var(--success); }
 
-/* ── Progress bar ── */
-.progress-bar-section { padding: 12px 16px 6px; }
+/* ── Progress bar — XP style ── */
+.progress-bar-section { padding: 10px 14px 6px; }
 
 .progress-track-outer {
   position: relative;
-  height: 10px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  box-shadow: var(--inset);
+  height: 18px;
+  background: linear-gradient(180deg, #d8d8d8 0%, #f0f0f0 50%, #d8d8d8 100%);
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
   overflow: hidden;
 }
 
 .progress-fill {
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--amber) 0px,
-    var(--amber) 8px,
-    rgba(255,150,0,0.6) 8px,
-    rgba(255,150,0,0.6) 10px
-  );
+  background: linear-gradient(180deg, #6aacee 0%, #1a6acc 40%, #1250a0 70%, #1a6acc 100%);
   transition: width .5s cubic-bezier(.4,0,.2,1);
   width: 0%;
-  box-shadow: 2px 0 8px rgba(255,150,0,.4);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
 }
-.progress-fill.done {
+/* XP-style animated shimmer */
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: repeating-linear-gradient(
     90deg,
-    var(--green) 0px,
-    var(--green) 8px,
-    rgba(0,200,80,0.6) 8px,
-    rgba(0,200,80,0.6) 10px
+    transparent 0px,
+    transparent 14px,
+    rgba(255,255,255,0.12) 14px,
+    rgba(255,255,255,0.12) 22px
   );
-  box-shadow: 2px 0 8px rgba(0,200,80,.4);
+}
+.progress-fill.done {
+  background: linear-gradient(180deg, #6acc6a 0%, #2a8a2a 40%, #1a6a1a 70%, #2a8a2a 100%);
 }
 
-/* Tick marks */
-.progress-ticks { position: absolute; inset: 0; display: flex; pointer-events: none; }
-.progress-tick { flex: 1; border-right: 1px solid rgba(0,0,0,0.3); }
-.progress-tick:last-child { border-right: none; }
+.progress-ticks { display: none; }
 
 .progress-bar-pct {
   display: flex;
   justify-content: space-between;
-  margin-top: 4px;
-  font-size: 9px;
+  margin-top: 3px;
+  font-size: 10px;
   color: var(--text3);
-  letter-spacing: .05em;
 }
 
-/* ── Segment bars (LED blocks) ── */
+/* ── Segment bars ── */
 .segment-bars {
   display: flex;
   gap: 2px;
-  padding: 8px 16px 4px;
+  padding: 6px 14px 4px;
   align-items: flex-end;
-  height: 48px;
+  height: 44px;
+  background: #fafafa;
+  border-top: 1px solid #eeeeee;
 }
 
-.segment-bar {
-  flex: 1;
-  background: var(--border);
-  min-height: 3px;
-  position: relative;
-}
-.segment-bar.filled {
-  background: var(--amber2);
-  box-shadow: 0 0 4px rgba(255,120,0,.5);
-}
-.segment-bar.done {
-  background: var(--green);
-  box-shadow: 0 0 4px rgba(0,220,80,.5);
-}
+.segment-bar { flex: 1; background: #ddd; min-height: 2px; border-radius: 1px; }
+.segment-bar.filled { background: var(--blue); }
+.segment-bar.done   { background: var(--success); }
 
 /* ── Waveform ── */
 .waveform-row {
-  padding: 4px 16px 10px;
+  padding: 4px 14px 8px;
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 36px;
+  height: 32px;
+  background: #fafafa;
 }
 .wave-bar {
   flex: 1;
-  background: var(--border);
+  background: #ddd;
   height: 2px;
   transform-origin: center;
   transition: background .3s;
 }
 .waveform-row.active .wave-bar {
   animation: waveAnim .8s ease-in-out infinite alternate;
-  background: rgba(255,150,0,.55);
+  background: rgba(26,95,168,0.5);
 }
 .waveform-row.active.done .wave-bar {
-  background: rgba(0,220,80,.55);
+  background: rgba(42,122,42,0.5);
   animation-duration: 1.4s;
 }
-.wave-bar:nth-child(1)  { animation-delay: 0.00s; }
-.wave-bar:nth-child(2)  { animation-delay: 0.04s; }
-.wave-bar:nth-child(3)  { animation-delay: 0.08s; }
-.wave-bar:nth-child(4)  { animation-delay: 0.12s; }
-.wave-bar:nth-child(5)  { animation-delay: 0.16s; }
-.wave-bar:nth-child(6)  { animation-delay: 0.20s; }
-.wave-bar:nth-child(7)  { animation-delay: 0.24s; }
-.wave-bar:nth-child(8)  { animation-delay: 0.28s; }
-.wave-bar:nth-child(9)  { animation-delay: 0.32s; }
-.wave-bar:nth-child(10) { animation-delay: 0.36s; }
-.wave-bar:nth-child(11) { animation-delay: 0.40s; }
-.wave-bar:nth-child(12) { animation-delay: 0.44s; }
-.wave-bar:nth-child(13) { animation-delay: 0.48s; }
-.wave-bar:nth-child(14) { animation-delay: 0.52s; }
-.wave-bar:nth-child(15) { animation-delay: 0.56s; }
-.wave-bar:nth-child(16) { animation-delay: 0.60s; }
-.wave-bar:nth-child(17) { animation-delay: 0.64s; }
-.wave-bar:nth-child(18) { animation-delay: 0.68s; }
-.wave-bar:nth-child(19) { animation-delay: 0.72s; }
-.wave-bar:nth-child(20) { animation-delay: 0.76s; }
-.wave-bar:nth-child(21) { animation-delay: 0.80s; }
-.wave-bar:nth-child(22) { animation-delay: 0.84s; }
-.wave-bar:nth-child(23) { animation-delay: 0.88s; }
-.wave-bar:nth-child(24) { animation-delay: 0.92s; }
-.wave-bar:nth-child(25) { animation-delay: 0.96s; }
+.wave-bar:nth-child(1)  { animation-delay:.00s } .wave-bar:nth-child(2)  { animation-delay:.04s }
+.wave-bar:nth-child(3)  { animation-delay:.08s } .wave-bar:nth-child(4)  { animation-delay:.12s }
+.wave-bar:nth-child(5)  { animation-delay:.16s } .wave-bar:nth-child(6)  { animation-delay:.20s }
+.wave-bar:nth-child(7)  { animation-delay:.24s } .wave-bar:nth-child(8)  { animation-delay:.28s }
+.wave-bar:nth-child(9)  { animation-delay:.32s } .wave-bar:nth-child(10) { animation-delay:.36s }
+.wave-bar:nth-child(11) { animation-delay:.40s } .wave-bar:nth-child(12) { animation-delay:.44s }
+.wave-bar:nth-child(13) { animation-delay:.48s } .wave-bar:nth-child(14) { animation-delay:.52s }
+.wave-bar:nth-child(15) { animation-delay:.56s } .wave-bar:nth-child(16) { animation-delay:.60s }
+.wave-bar:nth-child(17) { animation-delay:.64s } .wave-bar:nth-child(18) { animation-delay:.68s }
+.wave-bar:nth-child(19) { animation-delay:.72s } .wave-bar:nth-child(20) { animation-delay:.76s }
+.wave-bar:nth-child(21) { animation-delay:.80s } .wave-bar:nth-child(22) { animation-delay:.84s }
+.wave-bar:nth-child(23) { animation-delay:.88s } .wave-bar:nth-child(24) { animation-delay:.92s }
+.wave-bar:nth-child(25) { animation-delay:.96s }
 
 /* ── Speed graph ── */
 #speed-graph-wrap {
-  padding: 8px 16px 4px;
-  border-top: 1px solid var(--border);
+  padding: 6px 14px 4px;
+  border-top: 1px solid #eeeeee;
+  background: #fafafa;
 }
 #speed-graph-label {
-  font-size: 9px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: bold;
   color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .06em;
   margin-bottom: 3px;
 }
 #speed-canvas {
-  width: 100%; height: 40px;
+  width: 100%; height: 38px;
   display: block;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: #f4f8ff;
+  border: 1px solid #d4dcec;
+  border-radius: 2px;
 }
 
 /* ── Ring + info ── */
 .progress-ring-wrap {
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   border-top: 1px solid var(--border);
+  background: #fafafa;
 }
 
-.ring-svg {
-  flex-shrink: 0;
-  transform: rotate(-90deg);
-  filter: drop-shadow(0 0 5px rgba(255,150,0,.2));
-  transition: filter .4s;
-}
-.ring-svg.done { filter: drop-shadow(0 0 5px rgba(0,200,80,.25)); }
-
-.ring-track { fill: none; stroke: var(--border2); stroke-width: 5; }
+.ring-svg { flex-shrink: 0; transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: #ddd; stroke-width: 5; }
 .ring-fill {
   fill: none;
   stroke: url(#ringGrad);
@@ -737,18 +745,20 @@ body::after {
   transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
 }
 .ring-fill.done { stroke: url(#ringGradGreen); }
+.ring-svg.done {}
 
 .ring-info { flex: 1; }
-.ring-status-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
-.ring-status-value { font-family: var(--display); font-size: 28px; color: var(--text); margin-bottom: 2px; line-height: 1; }
+.ring-status-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); margin-bottom: 3px; }
+.ring-status-value { font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 22px; font-weight: bold; color: var(--text); margin-bottom: 2px; line-height: 1; }
 .ring-status-sub { font-size: 11px; color: var(--text2); }
 
 /* ── Phase timeline ── */
 .phase-timeline {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
+  background: #fafafa;
 }
 
 .phase-step {
@@ -756,53 +766,54 @@ body::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   position: relative;
 }
 
 .phase-step:not(:last-child)::after {
-  content: '- - -';
+  content: '────────';
   position: absolute;
-  top: 8px;
+  top: 9px;
   left: calc(50% + 14px);
   right: calc(-50% + 14px);
-  font-size: 8px;
-  color: var(--border2);
-  letter-spacing: .05em;
-  text-align: center;
+  font-size: 9px;
+  color: #ccc;
   overflow: hidden;
-  z-index: 0;
+  letter-spacing: -.05em;
 }
-.phase-step.done-step:not(:last-child)::after  { color: var(--green); }
-.phase-step.active-step:not(:last-child)::after { color: var(--amber2); }
+.phase-step.done-step:not(:last-child)::after  { color: var(--success); }
+.phase-step.active-step:not(:last-child)::after { color: var(--blue); }
 
 .phase-node {
-  width: 18px; height: 18px;
-  border: 1px solid var(--border2);
-  background: var(--bg);
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
-  color: var(--text3);
+  font-size: 9px;
+  font-weight: bold;
+  color: #aaa;
   position: relative;
   z-index: 1;
   transition: all .3s;
 }
-.phase-step.done-step .phase-node   { border-color: var(--green); background: rgba(0,200,80,.1); color: var(--green); }
-.phase-step.active-step .phase-node { border-color: var(--amber); background: rgba(255,150,0,.1); color: var(--amber); animation: blinkNode 1s step-start infinite; }
+.phase-step.done-step .phase-node   { border-color: var(--success); background: #e8f8e8; color: var(--success); }
+.phase-step.active-step .phase-node { border-color: var(--blue);    background: var(--blue-lite); color: var(--blue); animation: blinkNode 1s step-start infinite; }
 
-.phase-name { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); text-align: center; transition: color .3s; }
-.phase-step.done-step .phase-name   { color: var(--green); }
-.phase-step.active-step .phase-name { color: var(--amber); }
+.phase-name { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: .05em; color: #aaa; text-align: center; }
+.phase-step.done-step .phase-name   { color: var(--success); }
+.phase-step.active-step .phase-name { color: var(--blue); }
 
 /* ── Stats row ── */
 .progress-stats-row {
   display: flex;
   align-items: center;
   border-top: 1px solid var(--border);
-  padding: 10px 16px;
+  padding: 8px 14px;
   gap: 0;
+  background: #fff;
 }
 
 .stat-block {
@@ -810,318 +821,354 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-right: 16px;
+  padding-right: 14px;
   border-right: 1px solid var(--border);
 }
-.stat-block:last-child { border-right: none; padding-right: 0; padding-left: 16px; flex: 0; align-items: flex-end; }
+.stat-block:last-child { border-right: none; padding-right: 0; padding-left: 14px; flex: 0; align-items: flex-end; }
 
-.stat-label { font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.stat-value { font-family: var(--mono); font-size: 13px; color: var(--text); }
-.stat-value.speed { color: var(--amber); }
-.stat-value.eta   { color: var(--cyan); }
+.stat-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); }
+.stat-value { font-size: 13px; color: var(--text); font-weight: bold; }
+.stat-value.speed { color: var(--blue); }
+.stat-value.eta   { color: var(--orange); }
 
-/* ── Status bar ── */
+/* ── Status bar (bottom of progress) ── */
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--bg);
-  border-top: 1px solid var(--border2);
-  font-size: 10px;
+  gap: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #f0f0f0 0%, #e4e4e4 100%);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
 }
 
-.status-dot-ring { position: relative; width: 10px; height: 10px; flex-shrink: 0; }
-.status-dot-ring .dot-inner { position: absolute; inset: 2px; background: var(--text3); }
-.status-dot-ring .dot-ring  { position: absolute; inset: 0; border: 1px solid var(--text3); transition: border-color .3s; }
-
-.status-dot-ring.downloading .dot-inner { background: var(--amber); }
-.status-dot-ring.downloading .dot-ring  { border-color: var(--amber); animation: pingRing 1s ease-in-out infinite; }
-.status-dot-ring.processing .dot-inner  { background: var(--cyan); }
-.status-dot-ring.processing .dot-ring   { border-color: var(--cyan); animation: pingRing 1.2s ease-in-out infinite; }
-.status-dot-ring.done .dot-inner        { background: var(--green); box-shadow: 0 0 5px var(--green); }
-.status-dot-ring.done .dot-ring         { border-color: var(--green); animation: none; }
+.status-dot-ring { position: relative; width: 12px; height: 12px; flex-shrink: 0; }
+.status-dot-ring .dot-inner { position: absolute; inset: 3px; background: #aaa; border-radius: 50%; }
+.status-dot-ring .dot-ring  { position: absolute; inset: 0; border: 2px solid #aaa; border-radius: 50%; transition: border-color .3s; }
+.status-dot-ring.downloading .dot-inner { background: var(--blue); }
+.status-dot-ring.downloading .dot-ring  { border-color: var(--blue); animation: pingRing 1s ease-in-out infinite; }
+.status-dot-ring.processing .dot-inner  { background: var(--orange); }
+.status-dot-ring.processing .dot-ring   { border-color: var(--orange); animation: pingRing 1.2s ease-in-out infinite; }
+.status-dot-ring.done .dot-inner        { background: var(--success); }
+.status-dot-ring.done .dot-ring         { border-color: var(--success); animation: none; }
 .status-dot-ring.error .dot-inner       { background: var(--red); }
+.status-dot-ring.error .dot-ring        { border-color: var(--red); }
 
-.status-text-main { letter-spacing: .12em; text-transform: uppercase; color: var(--text2); transition: color .3s; }
-.status-text-main.downloading { color: var(--amber); }
-.status-text-main.processing  { color: var(--cyan); }
-.status-text-main.done        { color: var(--green); }
+.status-text-main { font-weight: bold; color: var(--text2); transition: color .3s; }
+.status-text-main.downloading { color: var(--blue); }
+.status-text-main.processing  { color: var(--orange); }
+.status-text-main.done        { color: var(--success); }
 .status-text-main.error       { color: var(--red); }
 
-.status-elapsed-label { margin-left: auto; color: var(--text3); font-size: 9px; letter-spacing: .1em; }
+.status-elapsed-label { margin-left: auto; color: var(--text3); font-size: 10px; }
 
 /* ── Save section ── */
-#save-section { display: none; margin-top: 12px; }
+#save-section { display: none; }
 #save-section.visible { display: block; }
 
 .save-shell {
-  background: var(--bg2);
-  border: 1px solid var(--green);
-  box-shadow: 0 0 16px rgba(0,200,80,.08), var(--panel-shadow);
-  position: relative;
-}
-.save-shell::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--green2), transparent);
+  background: #f0fbf0;
+  border: 1px solid #88cc88;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
 .save-main {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 20px;
+  gap: 14px;
+  padding: 16px 18px;
   flex-wrap: wrap;
 }
 
 .save-icon-wrap {
   width: 44px; height: 44px;
-  background: rgba(0,220,80,.08);
-  border: 1px solid rgba(0,220,80,.3);
+  background: #d0f0d0;
+  border: 1px solid #88cc88;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--green2);
+  color: #2a7a2a;
   flex-shrink: 0;
   animation: popIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
 }
 
 .save-text { flex: 1; }
-.save-title { font-family: var(--display); font-size: 28px; color: var(--green2); line-height: 1; margin-bottom: 4px; text-shadow: 0 0 12px rgba(0,220,80,.3); }
+.save-title { font-family: 'Trebuchet MS', Arial, sans-serif; font-size: 22px; font-weight: bold; color: var(--success); margin-bottom: 3px; }
 .save-sub { font-size: 11px; color: var(--text2); word-break: break-all; }
 
 .save-stats-row {
   display: flex;
-  border-top: 1px solid rgba(0,200,80,.15);
-  padding: 12px 20px;
+  border-top: 1px solid #c8e8c8;
+  padding: 10px 18px;
   flex-wrap: wrap;
   gap: 0;
+  background: #e8f8e8;
 }
 
-.save-stat { flex: 1; min-width: 80px; display: flex; flex-direction: column; gap: 2px; padding-right: 16px; border-right: 1px solid var(--border); }
+.save-stat { flex: 1; min-width: 80px; display: flex; flex-direction: column; gap: 2px; padding-right: 14px; border-right: 1px solid #c8e8c8; }
 .save-stat:last-child { border-right: none; }
-.save-stat-label { font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.save-stat-val { font-family: var(--mono); font-size: 13px; color: var(--green); }
+.save-stat-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .05em; color: #558855; }
+.save-stat-val { font-size: 13px; color: var(--success); font-weight: bold; }
 
 /* ── Cookie panel ── */
 #cookie-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  margin-bottom: 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+  overflow: hidden;
 }
 
 #cookie-drop-zone {
-  border: 1px dashed var(--border2);
+  border: 2px dashed #ccc;
   margin: 12px;
-  padding: 18px;
+  padding: 16px;
   text-align: center;
   cursor: pointer;
   transition: border-color .2s, background .2s;
   font-size: 12px;
-  color: var(--text3);
+  color: var(--text2);
+  border-radius: var(--radius);
+  background: #fafafa;
 }
-#cookie-drop-zone.drag-over { border-color: var(--amber); background: rgba(255,170,0,.05); color: var(--amber); }
+#cookie-drop-zone:hover { border-color: var(--blue); background: var(--blue-lite); }
+#cookie-drop-zone.drag-over { border-color: var(--orange); background: #fff8ee; }
 #cookie-drop-zone input[type=file] { display: none; }
 
 #cookie-status-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 7px 14px;
   border-top: 1px solid var(--border);
   font-size: 11px;
-  background: var(--bg);
+  background: #f8f8f8;
 }
 
 /* ── History panel ── */
-#history-panel { margin-top: 18px; display: none; }
+#history-panel { margin-top: 12px; display: none; }
 #history-search {
   width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  box-shadow: var(--inset);
-  color: var(--green2);
-  font-family: var(--mono);
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
   font-size: 12px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   outline: none;
   margin-bottom: 6px;
-  caret-color: var(--green2);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
-#history-search:focus { border-color: var(--green); }
-.history-entry { display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-bottom: 1px solid var(--border); font-size: 11px; }
+#history-search:focus { border-color: var(--blue); }
+
+.history-entry { display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-bottom: 1px solid #f0f0f0; font-size: 11px; }
 .history-entry:last-child { border-bottom: none; }
-.hist-fmt { flex-shrink: 0; padding: 1px 6px; border: 1px solid var(--border2); color: var(--amber); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
-.hist-title { flex: 1; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-entry:hover { background: #f8f8f8; }
+.hist-fmt {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  background: var(--blue-lite);
+  border: 1px solid #c0d4f0;
+  border-radius: 2px;
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.hist-title { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-time  { flex-shrink: 0; color: var(--text3); font-size: 10px; }
 
 /* ── Error box ── */
 #error-box {
   display: none;
-  margin-top: 10px;
-  padding: 12px 14px;
-  background: rgba(255,34,34,.06);
-  border: 1px solid rgba(255,34,34,.3);
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--red-lite);
+  border: 1px solid #e08888;
+  border-radius: var(--radius);
   font-size: 12px;
-  color: #ff6666;
+  color: var(--red);
   line-height: 1.5;
 }
 #error-box.visible { display: block; }
-.error-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); margin-bottom: 3px; }
+.error-label { font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--red); margin-bottom: 2px; }
 
-/* ── Footer / status bar ── */
-.footer {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 10;
-  background: var(--bg3);
-  border-top: 1px solid var(--border2);
-  padding: 6px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--text3);
-  letter-spacing: .08em;
-  box-shadow: 0 -2px 8px rgba(0,0,0,.4);
+/* ── Tooltip ── */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--sans);
+  padding: 4px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 200;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
-.footer a { color: var(--amber); text-decoration: none; }
-.footer a:hover { color: var(--amber2); }
+[data-tip]:hover::after { opacity: 1; }
 
-/* Formats panel */
+/* ── Formats panel ── */
 #formats-panel {
   display: none;
   margin-top: 8px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   max-height: 180px;
   overflow-y: auto;
   font-size: 11px;
 }
 
+/* ── Footer ── */
+.footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
+  background: linear-gradient(180deg, #2a5fa8 0%, #1a3f7a 100%);
+  border-top: 1px solid #0d2550;
+  padding: 5px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #a0c0e8;
+  box-shadow: 0 -1px 4px rgba(0,0,0,0.3);
+}
+.footer a { color: #c8ddf5; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f0f0f0; }
+::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
 
 /* ── Spinner ── */
-.spinner { width: 8px; height: 8px; border: 1.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+.spinner { width: 10px; height: 10px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+.spinner-dark { border-color: rgba(0,0,0,0.2); border-top-color: var(--blue); }
 
 /* ── Confetti ── */
 .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
 .confetti-piece { position: absolute; width: 5px; height: 9px; opacity: 0; animation: confettiFall 1.8s ease-in forwards; }
 
-/* ── Section divider ── */
-.sec-label {
-  font-size: 9px;
-  letter-spacing: .25em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* ── Input fields (clip) ── */
+.input-field {
+  width: 110px;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
-.sec-label::before { content: '//'; color: var(--amber2); }
-.sec-label::after  { content: ''; flex: 1; height: 1px; background: var(--border); }
+.input-field:focus { border-color: var(--blue); box-shadow: inset 0 1px 2px rgba(0,0,0,0.08), 0 0 0 2px rgba(26,95,168,0.15); }
 
 /* ── Keyframes ── */
-@keyframes blink {
-  0%,100% { opacity: 1; }
-  50%      { opacity: .2; }
-}
-@keyframes blinkNode {
-  0%,100% { opacity: 1; }
-  50%      { opacity: .3; }
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes waveAnim { 0% { transform: scaleY(.2); } 100% { transform: scaleY(1); } }
-@keyframes pingRing { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(2); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
-@keyframes confettiFall { 0% { opacity: 1; transform: translateY(-20px) rotate(0deg); } 100% { opacity: 0; transform: translateY(100vh) rotate(720deg); } }
-@keyframes popIn { 0% { transform: scale(.5); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+@keyframes blinkNode { 0%,100%{opacity:1}50%{opacity:.3} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes waveAnim { 0%{transform:scaleY(.2)}100%{transform:scaleY(1)} }
+@keyframes pingRing { 0%{transform:scale(1);opacity:1}70%{transform:scale(2.2);opacity:0}100%{transform:scale(1);opacity:0} }
+@keyframes confettiFall { 0%{opacity:1;transform:translateY(-20px) rotate(0)}100%{opacity:0;transform:translateY(100vh) rotate(720deg)} }
+@keyframes popIn { 0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1} }
 
 /* ── Responsive ── */
 @media (max-width: 580px) {
-  .logo { font-size: 56px; }
-  .card-thumb, .card-thumb-placeholder { width: 100px; height: 64px; }
+  .logo-text { font-size: 22px; }
+  .card-thumb, .card-thumb-placeholder { width: 110px; height: 70px; }
   .url-row { flex-direction: column; }
-  .btn-fetch, #paste-btn { width: 100%; justify-content: center; }
+  .btn-blue, #paste-btn { width: 100%; justify-content: center; }
   .options-row { flex-direction: column; gap: 12px; }
   .toggle-group { flex-wrap: wrap; }
   .save-main { flex-direction: column; }
-  .progress-pct-large { font-size: 38px; }
+  .progress-pct-large { font-size: 32px; }
   .phase-name { display: none; }
   .stat-block { padding-right: 8px; }
-  .header-meta { display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px; align-items: center; }
-  #theme-btn { width: 100%; }
-  #formats-btn, #update-btn { width: 100%; justify-content: center; margin-left: 0 !important; }
+  #formats-btn, #update-btn { width: 100%; justify-content: center; }
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-
-  <!-- Header -->
-  <header class="header">
-    <div class="logo-wrap">
-      <div class="logo-eyebrow">&gt; youtube_downloader.exe</div>
-      <div class="logo">VOR<span>TEX</span></div>
+<!-- Site Header -->
+<div id="site-header">
+  <div class="site-logo">
+    <span class="logo-text">VORTEX</span>
+    <span class="logo-tag">YouTube Downloader</span>
+  </div>
+  <div class="header-right">
+    <button onclick="toggleTheme()" id="theme-btn" class="btn btn-gray" style="height:26px;font-size:11px;padding:0 10px;">
+      ◐ Theme
+    </button>
+    <div class="header-badge">
+      <span class="dot"></span>
+      Online
     </div>
-    <div class="header-meta">
-      <button onclick="toggleTheme()" id="theme-btn"
-        class="btn btn-amber"
-        style="height:34px;font-size:10px;padding:0 14px;">
-        [◐] THEME
-      </button>
-      <div class="badge">
-        <span class="dot"></span>
-        ONLINE
-      </div>
-      <div class="badge">yt-dlp v2024</div>
-    </div>
-  </header>
+    <div class="header-badge">yt-dlp</div>
+  </div>
+</div>
 
-  <!-- 01 Input -->
-  <div class="sec-label">01 &nbsp;PASTE URL</div>
-  <div class="input-section panel" style="margin-bottom:10px;">
-    <div class="panel-body" style="padding-bottom:12px;">
+<div id="wrapper">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <button class="btn btn-gray" style="height:24px;font-size:11px;" onclick="resetAll()">⟳ New Download</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-gray" id="update-btn" onclick="updateYtDlp()" style="height:24px;font-size:11px;" data-tip="pip install -U yt-dlp">↻ Update yt-dlp</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-gray" id="formats-btn" onclick="checkFormats()" style="height:24px;font-size:11px;" data-tip="List all available formats for this URL">≡ Check Formats</button>
+    <div style="flex:1;"></div>
+    <span style="font-size:11px;color:var(--text3);" id="footer-status">Ready</span>
+  </div>
+
+  <!-- Step 1: URL -->
+  <div class="sec-label"><span class="sec-label-num">1</span> Paste YouTube URL</div>
+  <div class="panel" style="margin-bottom:10px;">
+    <div class="panel-body">
       <div class="url-row">
-        <input
-          type="url"
-          class="url-input"
-          id="url-input"
-          placeholder="https://youtube.com/watch?v=...  or  playlist URL"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button class="btn" id="paste-btn" onclick="pasteFromClipboard()"
-          style="border-color:#886600;color:#aa8800;padding:0 14px;"
-          data-tip="Paste from clipboard">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-          PASTE
+        <input type="url" class="url-input" id="url-input"
+          placeholder="https://www.youtube.com/watch?v=...  or playlist URL"
+          autocomplete="off" spellcheck="false"/>
+        <button class="btn btn-gray" id="paste-btn" onclick="pasteFromClipboard()"
+          style="height:32px;" data-tip="Paste from clipboard">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Paste
         </button>
-        <button class="btn btn-fetch" id="fetch-btn" onclick="fetchInfo()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          FETCH
+        <button class="btn btn-blue" id="fetch-btn" onclick="fetchInfo()" style="height:32px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Fetch Info
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 02 Options -->
-  <div class="sec-label" style="margin-top:16px;">02 &nbsp;OPTIONS</div>
+  <!-- Step 2: Options -->
+  <div class="sec-label"><span class="sec-label-num">2</span> Options</div>
   <div class="panel">
-    <div class="panel-title">
-      <span class="panel-title-text">FORMAT &amp; QUALITY</span>
+    <div class="panel-head">
+      <div class="panel-head-title">Format &amp; Quality</div>
     </div>
     <div class="panel-body">
       <div class="options-row">
         <div class="option-group">
-          <div class="option-group-label">Format</div>
+          <div class="option-label">Format</div>
           <div class="toggle-group" id="format-group">
             <button class="toggle-btn active" data-format="mp4"  onclick="selectFormat('mp4')">MP4</button>
             <button class="toggle-btn"        data-format="mp3"  onclick="selectFormat('mp3')">MP3</button>
@@ -1133,100 +1180,64 @@ body::after {
         </div>
 
         <div class="option-group" id="quality-group">
-          <div class="option-group-label">Quality</div>
+          <div class="option-label">Quality</div>
           <div class="toggle-group" id="quality-btns"><!-- JS --></div>
         </div>
 
         <div class="option-group" id="subtitle-group" style="display:none;">
-          <div class="option-group-label" data-tip="Download English subtitles">Subtitles</div>
+          <div class="option-label" data-tip="Download English subtitles">Subtitles</div>
           <div class="toggle-group">
-            <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">OFF</button>
-            <button class="toggle-btn" id="burn-btn" onclick="toggleBurnSubs()" style="display:none;"
-              data-tip="Burn subs into pixels">BURN</button>
+            <button class="toggle-btn" id="subtitle-btn" onclick="toggleSubtitles()">Off</button>
+            <button class="toggle-btn" id="burn-btn" onclick="toggleBurnSubs()" style="display:none;" data-tip="Burn subs into video pixels">Burn</button>
           </div>
         </div>
 
-        <div class="option-group" data-tip="Split at chapter markers">
-          <div class="option-group-label">Chapters</div>
-          <button class="toggle-btn" id="chapters-btn" onclick="toggleChapters()">OFF</button>
+        <div class="option-group" data-tip="Split video at chapter markers">
+          <div class="option-label">Chapters</div>
+          <button class="toggle-btn" id="chapters-btn" onclick="toggleChapters()">Off</button>
         </div>
 
-        <div class="option-group" data-tip="Bypass age restriction via user-agent">
-          <div class="option-group-label">Age bypass</div>
-          <button class="toggle-btn" id="age-bypass-btn" onclick="toggleAgeBypass()">OFF</button>
+        <div class="option-group" data-tip="Bypass age restriction">
+          <div class="option-label">Age Bypass</div>
+          <button class="toggle-btn" id="age-bypass-btn" onclick="toggleAgeBypass()">Off</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Clip / Trim -->
-  <div class="panel" style="margin-top:8px;">
-    <div class="panel-title">
-      <span class="panel-title-text">CLIP / TRIM &nbsp;<span style="font-size:9px;letter-spacing:.1em;color:var(--text3);">(OPTIONAL)</span></span>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-head-title">Clip / Trim <span style="font-weight:normal;color:var(--text3);font-size:11px;">&nbsp;— optional</span></div>
     </div>
     <div class="panel-body">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <label class="option-group-label">Start (sec)</label>
-          <input type="number" id="clip-start" min="0" step="1" placeholder="e.g. 30"
-            style="width:110px;background:var(--bg);border:1px solid var(--border2);box-shadow:var(--inset);
-                   color:var(--green2);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;
-                   caret-color:var(--green2);"
-            onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'"/>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label class="option-label">Start (seconds)</label>
+          <input type="number" id="clip-start" min="0" step="1" placeholder="e.g. 30" class="input-field"
+            onfocus="this.style.borderColor='#1a5fa8'" onblur="this.style.borderColor='#bbb'"/>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <label class="option-group-label">End (sec)</label>
-          <input type="number" id="clip-end" min="0" step="1" placeholder="e.g. 90"
-            style="width:110px;background:var(--bg);border:1px solid var(--border2);box-shadow:var(--inset);
-                   color:var(--green2);font-family:var(--mono);font-size:13px;padding:8px 12px;outline:none;
-                   caret-color:var(--green2);"
-            onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border2)'"/>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label class="option-label">End (seconds)</label>
+          <input type="number" id="clip-end" min="0" step="1" placeholder="e.g. 90" class="input-field"
+            onfocus="this.style.borderColor='#1a5fa8'" onblur="this.style.borderColor='#bbb'"/>
         </div>
-        <div style="font-size:10px;color:var(--text3);padding-bottom:2px;">Leave blank for full video</div>
+        <div style="font-size:11px;color:var(--text3);padding-bottom:2px;">Leave blank to download full video</div>
       </div>
     </div>
   </div>
 
-  <!-- Format checker + update -->
-  <div class="panel" style="margin-top:8px;">
-    <div class="panel-title">
-      <span class="panel-title-text">TOOLS</span>
-    </div>
-    <div class="panel-body" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      <button class="btn btn-amber" id="formats-btn" onclick="checkFormats()"
-        style="height:36px;font-size:10px;padding:0 16px;"
-        data-tip="List all available formats for this URL">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        CHECK FORMATS
-      </button>
-      <span style="font-size:10px;color:var(--text3);">See available resolutions from YouTube</span>
-      <button class="btn btn-green" id="update-btn" onclick="updateYtDlp()"
-        style="height:36px;font-size:10px;padding:0 16px;margin-left:auto;"
-        data-tip="pip install -U yt-dlp">
-        [↻] UPDATE YT-DLP
-      </button>
-    </div>
-    <div id="formats-panel"></div>
-  </div>
+  <!-- Formats panel (shown on demand) -->
+  <div id="formats-panel"></div>
 
-  <!-- Cookie panel -->
-  <div class="sec-label" style="margin-top:16px;">03 &nbsp;AUTHENTICATION</div>
+  <!-- Step 3: Cookies -->
+  <div class="sec-label"><span class="sec-label-num">3</span> Authentication (Age-Restricted Videos)</div>
   <div id="cookie-panel">
-    <div class="panel-title">
-      <span class="panel-title-text">BROWSER COOKIES</span>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <a href="/guide" target="_blank"
-          style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-                 padding:3px 10px;border:1px solid var(--amber2);color:var(--amber);
-                 text-decoration:none;background:rgba(255,150,0,0.07);"
-          onmouseover="this.style.background='rgba(255,150,0,0.15)'"
-          onmouseout="this.style.background='rgba(255,150,0,0.07)'">
-          [?] GUIDE
-        </a>
-        <button onclick="toggleCookiePanel()"
-          style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;">
-          HIDE ▲
-        </button>
+    <div class="panel-head">
+      <div class="panel-head-title">Browser Cookies</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <a href="/guide" target="_blank" class="btn btn-orange" style="height:22px;font-size:11px;padding:0 10px;">? Guide</a>
+        <button onclick="toggleCookiePanel()" class="btn btn-gray" style="height:22px;font-size:11px;padding:0 8px;">Hide ▲</button>
       </div>
     </div>
     <div id="cookie-drop-zone"
@@ -1235,132 +1246,106 @@ body::after {
       ondragleave="this.classList.remove('drag-over')"
       ondrop="handleCookieDrop(event)">
       <input type="file" id="cookie-file-input" accept=".txt" onchange="handleCookieFile(this.files[0])">
-      <div style="font-size:20px;margin-bottom:6px;">[ 📂 ]</div>
-      <div style="color:var(--text2);margin-bottom:3px;">Drop <strong>cookies.txt</strong> here or click to browse</div>
-      <div style="font-size:10px;color:var(--text3);">
-        Export from browser using <strong style="color:var(--amber);">Get cookies.txt LOCALLY</strong> — Netscape format
+      <div style="font-size:20px;margin-bottom:6px;">📂</div>
+      <div style="font-weight:bold;margin-bottom:3px;color:var(--text);">Drop <span style="color:var(--blue);">cookies.txt</span> here or click to browse</div>
+      <div style="font-size:11px;color:var(--text2);">
+        Export from your browser with the <strong style="color:var(--orange);">Get cookies.txt LOCALLY</strong> extension — Netscape format required
       </div>
     </div>
     <div id="cookie-status-bar">
-      <span id="cookie-status-dot" style="width:7px;height:7px;background:var(--text3);flex-shrink:0;"></span>
-      <span id="cookie-status-text" style="flex:1;color:var(--text3);">No cookies loaded</span>
-      <button id="cookie-clear-btn" onclick="clearCookies()"
-        style="display:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-               padding:2px 8px;border:1px solid var(--border2);background:transparent;
-               color:var(--text3);cursor:pointer;"
-        onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
-        onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
-        [X] CLEAR
+      <span id="cookie-status-dot" style="width:9px;height:9px;border-radius:50%;background:#ccc;flex-shrink:0;border:1px solid #aaa;"></span>
+      <span id="cookie-status-text" style="flex:1;color:var(--text2);">No cookies loaded — age-restricted videos may fail</span>
+      <button id="cookie-clear-btn" onclick="clearCookies()" class="btn btn-gray"
+        style="display:none;height:22px;font-size:11px;padding:0 8px;color:var(--red);border-color:#e08888;">
+        ✕ Clear
       </button>
     </div>
   </div>
 
   <!-- Error box -->
   <div id="error-box">
-    <div class="error-label">[!] ERROR</div>
+    <div class="error-label">⚠ Error</div>
     <div id="error-msg"></div>
   </div>
 
-  <!-- Info card -->
+  <!-- Step 4: Video Info -->
   <div id="info-card">
-    <div class="sec-label" style="margin-top:16px;">04 &nbsp;VIDEO INFO</div>
-    <div class="card" id="info-card-inner"><!-- JS --></div>
+    <div class="sec-label" style="margin-top:14px;"><span class="sec-label-num">4</span> Video Info</div>
+    <div class="panel" id="info-card-inner"><!-- JS --></div>
   </div>
 
-  <!-- Download section -->
+  <!-- Step 5: Download -->
   <div id="download-section">
-    <div class="sec-label" style="margin-top:16px;">05 &nbsp;DOWNLOAD</div>
-    <div class="download-row">
+    <div class="sec-label" style="margin-top:14px;"><span class="sec-label-num">5</span> Download</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 0;">
       <button class="btn btn-download" id="download-btn" onclick="startDownload()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        START DOWNLOAD
+        Start Download
       </button>
-      <span style="font-size:11px;color:var(--text3);" id="format-label">MP4 • 720p</span>
+      <span style="font-size:12px;color:var(--text2);" id="format-label">MP4 • 720p</span>
     </div>
   </div>
 
-  <!-- Progress section -->
+  <!-- Progress -->
   <div id="progress-section">
-    <div class="sec-label" style="margin-top:16px;" id="progress-section-label">DOWNLOADING...</div>
-
+    <div class="sec-label" style="margin-top:14px;" id="progress-section-label"><span class="sec-label-num">↓</span> Downloading...</div>
     <div class="progress-shell" id="progress-shell">
 
-      <!-- Header -->
       <div class="progress-header">
         <div class="progress-title-wrap">
-          <div class="progress-label">NOW DOWNLOADING</div>
+          <div class="progress-label">Now Downloading</div>
           <div class="progress-title" id="progress-title">—</div>
         </div>
         <div class="progress-pct-large" id="progress-pct-large">0%</div>
       </div>
 
-      <!-- Bar -->
       <div class="progress-bar-section">
         <div class="progress-track-outer">
           <div class="progress-fill" id="progress-fill"></div>
-          <div class="progress-ticks">
-            <div class="progress-tick"></div><div class="progress-tick"></div>
-            <div class="progress-tick"></div><div class="progress-tick"></div>
-            <div class="progress-tick"></div><div class="progress-tick"></div>
-            <div class="progress-tick"></div><div class="progress-tick"></div>
-            <div class="progress-tick"></div><div class="progress-tick"></div>
-          </div>
+          <div class="progress-ticks"></div>
         </div>
         <div class="progress-bar-pct">
           <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
         </div>
       </div>
 
-      <!-- Segments -->
       <div class="segment-bars" id="segment-bars"></div>
 
-      <!-- Waveform -->
       <div class="waveform-row" id="waveform-row">
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
         <div class="wave-bar"></div>
       </div>
 
-      <!-- Speed graph -->
       <div id="speed-graph-wrap">
-        <div id="speed-graph-label">[ LIVE SPEED ]</div>
-        <canvas id="speed-canvas" height="40"></canvas>
+        <div id="speed-graph-label">Live Speed</div>
+        <canvas id="speed-canvas" height="38"></canvas>
       </div>
 
-      <!-- Ring + info -->
       <div class="progress-ring-wrap">
-        <svg class="ring-svg" id="ring-svg" width="68" height="68" viewBox="0 0 72 72">
+        <svg class="ring-svg" id="ring-svg" width="64" height="64" viewBox="0 0 72 72">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#ffaa00"/>
-              <stop offset="100%" stop-color="#ff7700"/>
+              <stop offset="0%" stop-color="#4a85cc"/><stop offset="100%" stop-color="#1a3fa8"/>
             </linearGradient>
             <linearGradient id="ringGradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#00dd66"/>
-              <stop offset="100%" stop-color="#00ff88"/>
+              <stop offset="0%" stop-color="#5aaa5a"/><stop offset="100%" stop-color="#2a6a2a"/>
             </linearGradient>
           </defs>
           <circle class="ring-track" cx="36" cy="36" r="30"/>
           <circle class="ring-fill" id="ring-fill" cx="36" cy="36" r="30"/>
         </svg>
         <div class="ring-info">
-          <div class="ring-status-label">STATUS</div>
-          <div class="ring-status-value" id="ring-status-value">QUEUED</div>
+          <div class="ring-status-label">Status</div>
+          <div class="ring-status-value" id="ring-status-value">Queued</div>
           <div class="ring-status-sub" id="ring-status-sub">Waiting to start...</div>
         </div>
       </div>
 
-      <!-- Phase timeline -->
       <div class="phase-timeline">
         <div class="phase-step" id="phase-queued">
           <div class="phase-node">Q</div>
@@ -1380,7 +1365,6 @@ body::after {
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="progress-stats-row">
         <div class="stat-block">
           <div class="stat-label">Speed</div>
@@ -1394,27 +1378,22 @@ body::after {
           <div class="stat-label">Elapsed</div>
           <div class="stat-value" id="stat-elapsed">0s</div>
         </div>
-        <div class="stat-block" style="flex:0;align-items:flex-end;padding-left:16px;border-left:1px solid var(--border);border-right:none;padding-right:0;">
+        <div class="stat-block" style="flex:0;align-items:flex-end;padding-left:14px;border-left:1px solid var(--border);border-right:none;padding-right:0;">
           <div class="stat-label">Progress</div>
           <div class="stat-value" id="stat-pct-small">0%</div>
         </div>
       </div>
 
-      <!-- Status bar -->
       <div class="status-bar">
         <div class="status-dot-ring" id="status-dot-ring">
           <div class="dot-inner"></div>
           <div class="dot-ring"></div>
         </div>
-        <span class="status-text-main" id="status-text-main">QUEUED</span>
+        <span class="status-text-main" id="status-text-main">Queued</span>
         <span class="status-elapsed-label" id="status-elapsed-label">00:00</span>
-        <button id="cancel-btn" onclick="cancelDownload()"
-          style="margin-left:10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-                 padding:3px 10px;border:1px solid var(--border2);background:transparent;
-                 color:var(--text3);cursor:pointer;"
-          onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
-          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
-          [X] CANCEL
+        <button id="cancel-btn" onclick="cancelDownload()" class="btn btn-gray"
+          style="margin-left:10px;height:22px;font-size:11px;padding:0 8px;color:var(--red);border-color:#e08888;">
+          ✕ Cancel
         </button>
       </div>
 
@@ -1424,67 +1403,50 @@ body::after {
   <!-- Save section -->
   <div id="save-section">
     <div class="save-shell">
-      <div class="panel-title" style="border-color:rgba(0,200,80,.3);">
-        <span class="panel-title-text" style="color:var(--green2);">DOWNLOAD COMPLETE</span>
+      <div class="panel-head" style="background:linear-gradient(180deg,#e8f8e8 0%,#d8f0d8 100%);border-color:#88cc88;">
+        <div class="panel-head-title" style="color:var(--success);">✓ Download Complete</div>
       </div>
       <div class="save-main">
         <div class="save-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </div>
         <div class="save-text">
-          <div class="save-title">FILE READY</div>
+          <div class="save-title">File Ready!</div>
           <div class="save-sub" id="save-filename">—</div>
         </div>
         <a class="btn btn-save" id="save-btn" href="#" download>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          SAVE FILE
+          Save File
         </a>
       </div>
       <div class="save-stats-row">
-        <div class="save-stat">
-          <div class="save-stat-label">Format</div>
-          <div class="save-stat-val" id="save-stat-format">—</div>
-        </div>
-        <div class="save-stat">
-          <div class="save-stat-label">Quality</div>
-          <div class="save-stat-val" id="save-stat-quality">—</div>
-        </div>
-        <div class="save-stat">
-          <div class="save-stat-label" id="save-stat-duration-label">Duration</div>
-          <div class="save-stat-val" id="save-stat-duration">—</div>
-        </div>
-        <div class="save-stat">
-          <div class="save-stat-label">Time taken</div>
-          <div class="save-stat-val" id="save-stat-time">—</div>
-        </div>
+        <div class="save-stat"><div class="save-stat-label">Format</div><div class="save-stat-val" id="save-stat-format">—</div></div>
+        <div class="save-stat"><div class="save-stat-label">Quality</div><div class="save-stat-val" id="save-stat-quality">—</div></div>
+        <div class="save-stat"><div class="save-stat-label" id="save-stat-duration-label">Duration</div><div class="save-stat-val" id="save-stat-duration">—</div></div>
+        <div class="save-stat"><div class="save-stat-label">Time Taken</div><div class="save-stat-val" id="save-stat-time">—</div></div>
       </div>
-      <div style="padding:10px 20px;border-top:1px solid rgba(0,200,80,.1);">
-        <button class="btn" onclick="resetAll()" style="height:34px;font-size:10px;">
-          [↩] DOWNLOAD ANOTHER
-        </button>
+      <div style="padding:8px 18px;border-top:1px solid #c8e8c8;background:#e8f8e8;">
+        <button class="btn btn-gray" onclick="resetAll()" style="height:26px;font-size:11px;">⟳ Download Another</button>
       </div>
     </div>
   </div>
 
-  <!-- History panel -->
+  <!-- History -->
   <div id="history-panel">
-    <div class="sec-label" style="margin-top:18px;">HISTORY</div>
-    <input id="history-search" placeholder="search history..." oninput="filterHistory(this.value)" />
-    <div id="history-list"
-      style="background:var(--bg2);border:1px solid var(--border2);overflow:hidden;">
-    </div>
+    <div class="sec-label" style="margin-top:14px;">Recent Downloads</div>
+    <input id="history-search" placeholder="Search history..." oninput="filterHistory(this.value)"/>
+    <div id="history-list" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"></div>
   </div>
 
-</div>
+</div><!-- /wrapper -->
 
 <div class="confetti-container" id="confetti-container"></div>
 
 <footer class="footer">
-  <span>VORTEX v2.0 &nbsp;|&nbsp; yt-dlp + ffmpeg</span>
-  <span id="footer-status">READY</span>
+  <span>VORTEX Downloader &nbsp;|&nbsp; Powered by yt-dlp + ffmpeg</span>
+  <span id="footer-status-bottom">Ready</span>
 </footer>
 
 <script>
@@ -1511,7 +1473,7 @@ const AUDIO_FORMATS   = new Set(['mp3', 'm4a', 'flac', 'ogg']);
 const GIF_FORMATS     = new Set(['gif']);
 const SEGMENTS        = 24;
 
-const segHeights = Array.from({ length: SEGMENTS }, () => 8 + Math.floor(Math.random() * 36));
+const segHeights = Array.from({ length: SEGMENTS }, () => 6 + Math.floor(Math.random() * 28));
 
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -1530,9 +1492,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.getElementById('info-card');
     if (card.classList.contains('visible')) {
       card.style.opacity   = '0';
-      card.style.transform = 'translateY(10px)';
+      card.style.transform = 'translateY(8px)';
       requestAnimationFrame(() => {
-        card.style.transition = 'opacity .3s, transform .3s';
+        card.style.transition = 'opacity .25s, transform .25s';
         card.style.opacity    = '1';
         card.style.transform  = 'translateY(0)';
       });
@@ -1541,7 +1503,6 @@ document.addEventListener('DOMContentLoaded', () => {
   observer.observe(document.getElementById('info-card'), { attributes: true, attributeFilter: ['class'] });
 });
 
-// ── Build segment bars ─────────────────────────────────────────────────────
 function buildSegmentBars() {
   const container = document.getElementById('segment-bars');
   container.innerHTML = '';
@@ -1560,7 +1521,7 @@ function selectFormat(fmt) {
   document.querySelectorAll('#format-group .toggle-btn').forEach(b => {
     b.classList.remove('active', 'active-mp3', 'active-gif');
     if (b.dataset.format === fmt) {
-      if (fmt === 'gif')              b.classList.add('active-gif');
+      if (fmt === 'gif')               b.classList.add('active-gif');
       else if (AUDIO_FORMATS.has(fmt)) b.classList.add('active-mp3');
       else                             b.classList.add('active');
     }
@@ -1581,7 +1542,7 @@ function selectFormat(fmt) {
     el('subtitle-group').style.display = 'none';
     subtitlesEnabled = false;
     const sbtn = el('subtitle-btn');
-    if (sbtn) { sbtn.textContent = 'OFF'; sbtn.classList.remove('active'); }
+    if (sbtn) { sbtn.textContent = 'Off'; sbtn.classList.remove('active'); }
   }
   updateFormatLabel();
 }
@@ -1589,7 +1550,7 @@ function selectFormat(fmt) {
 function toggleSubtitles() {
   subtitlesEnabled = !subtitlesEnabled;
   const btn = el('subtitle-btn');
-  btn.textContent = subtitlesEnabled ? 'ON' : 'OFF';
+  btn.textContent = subtitlesEnabled ? 'On' : 'Off';
   btn.classList.toggle('active', subtitlesEnabled);
   const burnBtn = el('burn-btn');
   if (burnBtn) burnBtn.style.display = subtitlesEnabled ? '' : 'none';
@@ -1604,14 +1565,14 @@ function toggleBurnSubs() {
 function toggleChapters() {
   splitChapters = !splitChapters;
   const btn = el('chapters-btn');
-  btn.textContent = splitChapters ? 'ON' : 'OFF';
+  btn.textContent = splitChapters ? 'On' : 'Off';
   btn.classList.toggle('active', splitChapters);
 }
 
 function toggleAgeBypass() {
   ageBypass = !ageBypass;
   const btn = el('age-bypass-btn');
-  btn.textContent = ageBypass ? 'ON' : 'OFF';
+  btn.textContent = ageBypass ? 'On' : 'Off';
   btn.classList.toggle('active', ageBypass);
 }
 
@@ -1619,7 +1580,7 @@ function setQualityButtons(qualities, defaultQ) {
   const container = document.getElementById('quality-btns');
   container.innerHTML = '';
   qualities.forEach(q => {
-    const btn       = document.createElement('button');
+    const btn = document.createElement('button');
     btn.className   = 'toggle-btn' + (q === defaultQ ? ' active' : '');
     btn.textContent = q.toUpperCase();
     btn.onclick     = () => selectQuality(q);
@@ -1646,7 +1607,7 @@ function updateFormatLabel() {
 // ── Fetch info ─────────────────────────────────────────────────────────────
 async function fetchInfo() {
   const url = document.getElementById('url-input').value.trim();
-  if (!url) { showError('Paste a YouTube URL first.'); return; }
+  if (!url) { showError('Please paste a YouTube URL first.'); return; }
 
   hideError();
   hideSection('info-card');
@@ -1658,8 +1619,8 @@ async function fetchInfo() {
 
   const btn = document.getElementById('fetch-btn');
   btn.classList.add('loading');
-  btn.innerHTML = '<span class="spinner"></span> FETCHING...';
-  setFooter('FETCHING INFO...');
+  btn.innerHTML = '<span class="spinner"></span> Fetching...';
+  setFooter('Fetching video info...');
 
   try {
     const res  = await fetch('/api/info', {
@@ -1669,21 +1630,21 @@ async function fetchInfo() {
     });
     const data = await res.json();
 
-    if (!res.ok || data.error) { showError(data.error || 'Failed to fetch info.'); setFooter('ERROR'); return; }
+    if (!res.ok || data.error) { showError(data.error || 'Failed to fetch info.'); setFooter('Error'); return; }
 
     currentInfo = data;
     renderInfoCard(data);
     showSection('info-card');
     showSection('download-section');
     updateFormatLabel();
-    setFooter('READY TO DOWNLOAD');
+    setFooter('Ready to download');
 
   } catch (e) {
     showError('Network error — is the server running?');
-    setFooter('ERROR');
+    setFooter('Error');
   } finally {
     btn.classList.remove('loading');
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> FETCH`;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Fetch Info`;
   }
 }
 
@@ -1730,34 +1691,36 @@ function renderInfoCard(info) {
           <input type="checkbox" class="entry-checkbox" id="select-all-cb" checked>
         </label>
         <span class="playlist-count-label" id="playlist-count-label">${total} of ${total} selected</span>
-        <button class="playlist-select-btn" onclick="invertSelection()">INVERT</button>
+        <button class="playlist-select-btn" onclick="invertSelection()">Invert</button>
       </div>
       <div class="playlist-list" id="playlist-entry-list">${rows}</div>`;
   }
 
   inner.innerHTML = `
-    <div class="card-inner">
-      ${thumb}
-      <div class="card-body">
-        <div class="card-type">${info.is_playlist ? 'PLAYLIST' : 'VIDEO'}</div>
-        <div class="card-title">${escHtml(info.title)}</div>
-        <div class="card-meta">${metaHtml}</div>
+    <div class="panel-body" style="padding:0;">
+      <div class="card-inner">
+        ${thumb}
+        <div class="card-body">
+          <div class="card-type">${info.is_playlist ? 'Playlist' : 'Video'}</div>
+          <div class="card-title">${escHtml(info.title)}</div>
+          <div class="card-meta">${metaHtml}</div>
+        </div>
       </div>
+      ${playlistHtml}
     </div>
-    ${playlistHtml}
   `;
 }
 
 // ── Playlist helpers ───────────────────────────────────────────────────────
 function updatePlaylistCountLabel() {
-  const all     = document.querySelectorAll('#playlist-entry-list .entry-checkbox');
-  const checked = document.querySelectorAll('#playlist-entry-list .entry-checkbox:checked');
-  const label   = document.getElementById('playlist-count-label');
+  const all      = document.querySelectorAll('#playlist-entry-list .entry-checkbox');
+  const checked  = document.querySelectorAll('#playlist-entry-list .entry-checkbox:checked');
+  const label    = document.getElementById('playlist-count-label');
   const masterCb = document.getElementById('select-all-cb');
   if (!label || !masterCb) return;
-  label.textContent = `${checked.length} of ${all.length} selected`;
-  masterCb.indeterminate = checked.length > 0 && checked.length < all.length;
-  masterCb.checked = checked.length === all.length;
+  label.textContent          = `${checked.length} of ${all.length} selected`;
+  masterCb.indeterminate     = checked.length > 0 && checked.length < all.length;
+  masterCb.checked           = checked.length === all.length;
   all.forEach(cb => { cb.closest('.playlist-entry').classList.toggle('excluded', !cb.checked); });
 }
 
@@ -1786,7 +1749,7 @@ document.addEventListener('change', e => {
 // ── Start download ─────────────────────────────────────────────────────────
 async function startDownload() {
   const url = document.getElementById('url-input').value.trim();
-  if (!url || !currentInfo) { showError('Fetch video info first.'); return; }
+  if (!url || !currentInfo) { showError('Please fetch video info first.'); return; }
 
   if (sseSource) { sseSource.close(); sseSource = null; }
   hideError();
@@ -1794,7 +1757,7 @@ async function startDownload() {
 
   const btn    = document.getElementById('download-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> STARTING...';
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
 
   try {
     const clipStart = el('clip-start') ? el('clip-start').value.trim() : '';
@@ -1823,7 +1786,7 @@ async function startDownload() {
     if (!res.ok || data.error) {
       showError(data.error || 'Failed to start download.');
       btn.disabled = false;
-      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> START DOWNLOAD`;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
       return;
     }
 
@@ -1833,7 +1796,7 @@ async function startDownload() {
     showSection('progress-section');
     startElapsedTimer();
     subscribeProgress(currentTaskId);
-    setFooter('DOWNLOADING...');
+    setFooter('Downloading...');
 
   } catch (e) {
     showError('Network error.');
@@ -1843,10 +1806,7 @@ async function startDownload() {
 
 // ── Reset progress UI ──────────────────────────────────────────────────────
 function resetProgressUI() {
-  setFill(0, false);
-  setRing(0, false);
-  setSegments(0, false);
-
+  setFill(0, false); setRing(0, false); setSegments(0, false);
   el('progress-pct-large').textContent     = '0%';
   el('progress-pct-large').className       = 'progress-pct-large';
   el('stat-speed').textContent             = '—';
@@ -1854,30 +1814,24 @@ function resetProgressUI() {
   el('stat-elapsed').textContent           = '0s';
   el('stat-pct-small').textContent         = '0%';
   el('progress-title').textContent         = (currentInfo && currentInfo.title) || '—';
-  el('ring-status-value').textContent      = 'QUEUED';
+  el('ring-status-value').textContent      = 'Queued';
   el('ring-status-sub').textContent        = 'Preparing download...';
-  el('progress-section-label').textContent = 'DOWNLOADING...';
+  el('progress-section-label').innerHTML   = '<span class="sec-label-num">↓</span> Downloading...';
   el('status-elapsed-label').textContent   = '00:00';
-
-  setStatusStyle('queued');
-  setPhase('queued');
-
+  setStatusStyle('queued'); setPhase('queued');
   el('progress-shell').classList.add('active');
   el('waveform-row').classList.remove('done');
   el('waveform-row').classList.add('active');
   el('ring-svg').classList.remove('done');
-  speedHistory = [];
-  drawSpeedGraph();
+  speedHistory = []; drawSpeedGraph();
 }
 
 // ── SSE progress ───────────────────────────────────────────────────────────
 function subscribeProgress(taskId) {
   sseSource = new EventSource(`/api/progress/${taskId}`);
-
   sseSource.onmessage = e => {
     const task = JSON.parse(e.data);
     updateProgress(task);
-
     if (task.status === 'done') {
       sseSource.close();
       showDone(taskId, task);
@@ -1888,14 +1842,10 @@ function subscribeProgress(taskId) {
       hideSection('progress-section');
       resetDownloadBtn();
       stopElapsedTimer();
-      setFooter('ERROR');
+      setFooter('Error');
     }
   };
-
-  sseSource.onerror = () => {
-    sseSource.close();
-    setTimeout(() => pollStatus(taskId), 1000);
-  };
+  sseSource.onerror = () => { sseSource.close(); setTimeout(() => pollStatus(taskId), 1000); };
 }
 
 async function pollStatus(taskId) {
@@ -1903,16 +1853,9 @@ async function pollStatus(taskId) {
     const res  = await fetch(`/api/status/${taskId}`);
     const task = await res.json();
     updateProgress(task);
-    if (task.status === 'done') {
-      showDone(taskId, task);
-    } else if (task.status === 'error') {
-      showError(task.error || 'Download failed.');
-      hideSection('progress-section');
-      resetDownloadBtn();
-      stopElapsedTimer();
-    } else {
-      setTimeout(() => pollStatus(taskId), 800);
-    }
+    if (task.status === 'done') showDone(taskId, task);
+    else if (task.status === 'error') { showError(task.error || 'Download failed.'); hideSection('progress-section'); resetDownloadBtn(); stopElapsedTimer(); }
+    else setTimeout(() => pollStatus(taskId), 800);
   } catch {}
 }
 
@@ -1926,7 +1869,6 @@ function updateProgress(task) {
   el('progress-pct-large').textContent = `${Math.round(pct)}%`;
   el('progress-pct-large').className   = 'progress-pct-large' + (task.status === 'done' ? ' done' : '');
   el('stat-pct-small').textContent     = `${Math.round(pct)}%`;
-
   if (task.speed) el('stat-speed').textContent = task.speed;
   if (task.eta)   el('stat-eta').textContent   = task.eta;
   if (task.title) el('progress-title').textContent = task.title;
@@ -1936,15 +1878,14 @@ function updateProgress(task) {
   if (speedHistory.length > MAX_SPEED_PTS) speedHistory.shift();
   drawSpeedGraph();
 
-  setStatusStyle(task.status);
-  setPhase(task.status);
+  setStatusStyle(task.status); setPhase(task.status);
 
   const labels = {
-    queued:      ['QUEUED',      'Waiting to start...'],
-    downloading: ['DOWNLOADING', task.speed ? `Speed: ${task.speed}` : 'Pulling from servers...'],
-    processing:  ['PROCESSING',  'Converting & muxing...'],
-    done:        ['COMPLETE',    'File ready to save!'],
-    error:       ['ERROR',       task.error || 'Something went wrong'],
+    queued:      ['Queued',      'Waiting to start...'],
+    downloading: ['Downloading', task.speed ? `Speed: ${task.speed}` : 'Pulling from servers...'],
+    processing:  ['Processing',  'Converting & muxing...'],
+    done:        ['Complete',    'File ready to save!'],
+    error:       ['Error',       task.error || 'Something went wrong'],
   };
   const [sv, ss] = labels[task.status] || ['—', ''];
   el('ring-status-value').textContent = sv;
@@ -1952,11 +1893,9 @@ function updateProgress(task) {
 
   if (task.status === 'done' || task.status === 'processing') el('waveform-row').classList.add('done');
   if (task.status === 'done') el('ring-svg').classList.add('done');
-
-  setFooter(task.status === 'downloading' ? `DOWNLOADING  ${Math.round(pct)}%  ${task.speed || ''}` : sv);
+  setFooter(task.status === 'downloading' ? `Downloading... ${Math.round(pct)}% ${task.speed || ''}` : sv);
 }
 
-// ── Fill / ring / segments ─────────────────────────────────────────────────
 function setFill(pct, isDone) {
   const fill = el('progress-fill');
   fill.style.width = `${pct}%`;
@@ -1977,47 +1916,38 @@ function setSegments(pct, isDone) {
   for (let i = 0; i < SEGMENTS; i++) {
     const bar = el(`seg-${i}`);
     if (!bar) continue;
-    if (isDone) {
-      bar.classList.remove('filled');
-      bar.classList.add('done');
-    } else if (i < filled) {
-      bar.classList.add('filled');
-      bar.classList.remove('done');
-    } else {
-      bar.classList.remove('filled', 'done');
-    }
+    if (isDone) { bar.classList.remove('filled'); bar.classList.add('done'); }
+    else if (i < filled) { bar.classList.add('filled'); bar.classList.remove('done'); }
+    else { bar.classList.remove('filled', 'done'); }
   }
 }
 
 function setStatusStyle(status) {
-  const dot = el('status-dot-ring');
-  const txt = el('status-text-main');
+  const dot = el('status-dot-ring'), txt = el('status-text-main');
   dot.className = `status-dot-ring ${status}`;
   txt.className = `status-text-main ${status}`;
-  const labels = { queued: 'QUEUED', downloading: 'DOWNLOADING', processing: 'PROCESSING', done: 'COMPLETE', error: 'ERROR' };
-  txt.textContent = labels[status] || status.toUpperCase();
+  const labels = { queued:'Queued', downloading:'Downloading', processing:'Processing', done:'Complete', error:'Error' };
+  txt.textContent = labels[status] || status;
 }
 
 function setPhase(status) {
-  const order = ['queued', 'downloading', 'processing', 'done'];
+  const order = ['queued','downloading','processing','done'];
   const idx   = order.indexOf(status);
   order.forEach((phase, i) => {
-    const step = el(`phase-${phase}`);
-    if (!step) return;
-    step.classList.remove('active-step', 'done-step');
-    if (i < idx)        step.classList.add('done-step');
+    const step = el(`phase-${phase}`); if (!step) return;
+    step.classList.remove('active-step','done-step');
+    if (i < idx) step.classList.add('done-step');
     else if (i === idx) step.classList.add('active-step');
   });
 }
 
-// ── Elapsed timer ──────────────────────────────────────────────────────────
 function startElapsedTimer() {
   stopElapsedTimer();
   elapsedTimer = setInterval(() => {
     if (!startTime) return;
     const secs = Math.floor((Date.now() - startTime) / 1000);
-    const m    = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s    = (secs % 60).toString().padStart(2, '0');
+    const m = Math.floor(secs / 60).toString().padStart(2,'0');
+    const s = (secs % 60).toString().padStart(2,'0');
     el('status-elapsed-label').textContent = `${m}:${s}`;
     el('stat-elapsed').textContent         = secs < 60 ? `${secs}s` : `${m}:${s}`;
   }, 1000);
@@ -2027,13 +1957,12 @@ function stopElapsedTimer() { if (elapsedTimer) { clearInterval(elapsedTimer); e
 // ── Show done ──────────────────────────────────────────────────────────────
 function showDone(taskId, task) {
   stopElapsedTimer();
-  setFill(100, true); setRing(100, true); setSegments(100, true);
+  setFill(100,true); setRing(100,true); setSegments(100,true);
   el('progress-pct-large').textContent = '100%';
   el('progress-pct-large').className   = 'progress-pct-large done';
-  setStatusStyle('done');
-  setPhase('done');
+  setStatusStyle('done'); setPhase('done');
   el('progress-shell').classList.remove('active');
-  el('progress-section-label').textContent = 'COMPLETE';
+  el('progress-section-label').innerHTML = '<span class="sec-label-num">✓</span> Complete';
 
   setTimeout(() => {
     hideSection('progress-section');
@@ -2044,11 +1973,11 @@ function showDone(taskId, task) {
     el('save-filename').textContent = displayName || 'Ready to download';
 
     const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
-    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-    const s = (elapsed % 60).toString().padStart(2, '0');
+    const m = Math.floor(elapsed / 60).toString().padStart(2,'0');
+    const s = (elapsed % 60).toString().padStart(2,'0');
     const isPlaylist = !!(currentInfo && currentInfo.is_playlist);
     el('save-stat-format').textContent  = currentFormat.toUpperCase() + (isPlaylist ? ' ZIP' : '');
-    el('save-stat-quality').textContent = currentQuality === 'best' ? 'BEST' : currentQuality.toUpperCase();
+    el('save-stat-quality').textContent = currentQuality === 'best' ? 'Best' : currentQuality.toUpperCase();
     if (isPlaylist) {
       el('save-stat-duration-label').textContent = 'Tracks';
       el('save-stat-duration').textContent = currentInfo.count ? `${currentInfo.count}` : '—';
@@ -2061,27 +1990,26 @@ function showDone(taskId, task) {
     fireConfetti();
     resetDownloadBtn();
     recordHistory(task, currentFormat, currentQuality);
-    setFooter('FILE READY');
+    setFooter('File ready!');
   }, 700);
 }
 
 // ── Confetti ───────────────────────────────────────────────────────────────
 function fireConfetti() {
-  const container = el('confetti-container');
-  container.innerHTML = '';
-  const colors = ['#ffaa00', '#ff7700', '#00dd66', '#00ccff', '#e2e2e2', '#ff6666'];
+  const container = el('confetti-container'); container.innerHTML = '';
+  const colors = ['#1a5fa8','#e07800','#3a8a3a','#cc2222','#cccccc','#884499'];
   for (let i = 0; i < 60; i++) {
-    const piece = document.createElement('div');
-    piece.className               = 'confetti-piece';
-    piece.style.left              = `${Math.random() * 100}%`;
-    piece.style.top               = `${-10 + Math.random() * -30}px`;
-    piece.style.background        = colors[Math.floor(Math.random() * colors.length)];
-    piece.style.transform         = `rotate(${Math.random() * 360}deg)`;
-    piece.style.animationDelay    = `${Math.random() * .8}s`;
-    piece.style.animationDuration = `${1.4 + Math.random() * .8}s`;
-    piece.style.width             = `${3 + Math.random() * 5}px`;
-    piece.style.height            = `${5 + Math.random() * 8}px`;
-    container.appendChild(piece);
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left              = `${Math.random()*100}%`;
+    p.style.top               = `${-10+Math.random()*-30}px`;
+    p.style.background        = colors[Math.floor(Math.random()*colors.length)];
+    p.style.transform         = `rotate(${Math.random()*360}deg)`;
+    p.style.animationDelay    = `${Math.random()*.8}s`;
+    p.style.animationDuration = `${1.4+Math.random()*.8}s`;
+    p.style.width             = `${3+Math.random()*5}px`;
+    p.style.height            = `${5+Math.random()*8}px`;
+    container.appendChild(p);
   }
   setTimeout(() => { container.innerHTML = ''; }, 3000);
 }
@@ -2093,20 +2021,18 @@ function resetAll() {
   currentInfo = null; currentTaskId = null; startTime = null;
   el('url-input').value = '';
   hideError();
-  hideSection('info-card');
-  hideSection('download-section');
-  hideSection('progress-section');
-  hideSection('save-section');
+  hideSection('info-card'); hideSection('download-section');
+  hideSection('progress-section'); hideSection('save-section');
   resetDownloadBtn();
   el('url-input').focus();
-  setFooter('READY');
+  setFooter('Ready');
 }
 
 function resetDownloadBtn() {
   const btn = el('download-btn');
   if (btn) {
     btn.disabled  = false;
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> START DOWNLOAD`;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Start Download`;
   }
 }
 
@@ -2129,7 +2055,6 @@ function showError(msg) {
   const box = el('error-box'), txt = el('error-msg');
   if (box && txt) { txt.textContent = msg; box.classList.add('visible'); box.style.display = 'block'; }
 }
-
 function hideError() {
   const box = el('error-box');
   if (box) { box.classList.remove('visible'); box.style.display = 'none'; }
@@ -2141,8 +2066,8 @@ function escHtml(str) {
 }
 
 function setFooter(msg) {
-  const f = el('footer-status');
-  if (f) f.textContent = msg;
+  const f = el('footer-status'); if (f) f.textContent = msg;
+  const f2 = el('footer-status-bottom'); if (f2) f2.textContent = msg;
 }
 
 // ── Cancel ─────────────────────────────────────────────────────────────────
@@ -2152,7 +2077,7 @@ async function cancelDownload() {
 }
 
 // ── Queue polling ──────────────────────────────────────────────────────────
-function startQueuePoll()  {
+function startQueuePoll() {
   stopQueuePoll();
   queuePollTimer = setInterval(refreshQueue, 2000);
   refreshQueue();
@@ -2171,24 +2096,24 @@ function renderQueue(tasks) {
   if (!panel) {
     panel = document.createElement('div');
     panel.id = 'queue-panel';
-    panel.style.cssText = 'margin-top:12px;';
-    const container = document.querySelector('.container');
-    const footer    = document.querySelector('.footer');
-    container.insertBefore(panel, footer || null);
+    panel.style.marginTop = '10px';
+    const wrapper = document.getElementById('wrapper');
+    const footer  = document.querySelector('.footer');
+    wrapper.insertBefore(panel, footer || null);
   }
 
-  const rows = entries.map(([id, t]) => {
-    const col = { queued:'var(--text3)', downloading:'var(--amber)', processing:'var(--cyan)', done:'var(--green)', error:'var(--red)' }[t.status] || 'var(--text2)';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:11px;">
-      <span style="color:${col};text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;min-width:80px;">${t.status}</span>
-      <span style="color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.title || t.format?.toUpperCase() || 'Download')}</span>
+  const cols = { queued:'var(--text3)', downloading:'var(--blue)', processing:'var(--orange)', done:'var(--success)', error:'var(--red)' };
+  const rows = entries.map(([id, t]) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:5px 12px;border-bottom:1px solid #f0f0f0;font-size:11px;">
+      <span style="color:${cols[t.status]||'var(--text2)'};font-weight:bold;flex-shrink:0;min-width:80px;">${t.status}</span>
+      <span style="color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.title||t.format?.toUpperCase()||'Download')}</span>
       <span style="color:var(--text3);flex-shrink:0;">${Math.round(t.progress||0)}%</span>
-    </div>`;
-  }).join('');
+    </div>`
+  ).join('');
 
   panel.innerHTML = `
-    <div class="sec-label">ACTIVE QUEUE</div>
-    <div style="background:var(--bg2);border:1px solid var(--border2);overflow:hidden;">${rows}</div>`;
+    <div class="sec-label">Active Queue</div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">${rows}</div>`;
   panel.style.display = '';
 }
 
@@ -2203,19 +2128,19 @@ function fireNotification(title, body) {
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 function initTheme() {
-  const saved = localStorage.getItem('vortex-theme') || 'dark';
+  const saved = localStorage.getItem('vortex-theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
   const btn = el('theme-btn');
-  if (btn) btn.textContent = saved === 'light' ? '[◑] THEME' : '[◐] THEME';
+  if (btn) btn.textContent = saved === 'dark' ? '◑ Theme' : '◐ Theme';
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const next    = current === 'dark' ? 'light' : 'dark';
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next    = current === 'light' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('vortex-theme', next);
   const btn = el('theme-btn');
-  if (btn) btn.textContent = next === 'light' ? '[◑] THEME' : '[◐] THEME';
+  if (btn) btn.textContent = next === 'dark' ? '◑ Theme' : '◐ Theme';
 }
 
 // ── Clipboard ──────────────────────────────────────────────────────────────
@@ -2235,11 +2160,10 @@ async function pasteFromClipboard() {
 
 // ── Speed graph ────────────────────────────────────────────────────────────
 function drawSpeedGraph() {
-  const canvas = el('speed-canvas');
-  if (!canvas) return;
+  const canvas = el('speed-canvas'); if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W   = canvas.width = canvas.offsetWidth || 600;
-  const H   = canvas.height = 40;
+  const H   = canvas.height = 38;
   ctx.clearRect(0, 0, W, H);
   if (!speedHistory.length) return;
 
@@ -2247,7 +2171,7 @@ function drawSpeedGraph() {
   const step = W / Math.max(speedHistory.length - 1, 1);
 
   // Grid
-  ctx.strokeStyle = 'rgba(0,200,80,0.08)';
+  ctx.strokeStyle = 'rgba(26,95,168,0.1)';
   ctx.lineWidth   = 1;
   for (let i = 0; i <= 3; i++) {
     const y = Math.round(H - (i / 3) * H) + .5;
@@ -2256,8 +2180,8 @@ function drawSpeedGraph() {
 
   // Fill
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(255,170,0,0.5)');
-  grad.addColorStop(1, 'rgba(255,100,0,0.04)');
+  grad.addColorStop(0, 'rgba(26,95,168,0.35)');
+  grad.addColorStop(1, 'rgba(26,95,168,0.02)');
   ctx.beginPath();
   ctx.moveTo(0, H);
   speedHistory.forEach((v, i) => { ctx.lineTo(i * step, H - (v / max) * (H - 4)); });
@@ -2272,7 +2196,7 @@ function drawSpeedGraph() {
     const x = i * step, y = H - (v / max) * (H - 4);
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
-  ctx.strokeStyle = 'var(--amber)';
+  ctx.strokeStyle = '#1a5fa8';
   ctx.lineWidth   = 1.5;
   ctx.stroke();
 }
@@ -2280,17 +2204,17 @@ function drawSpeedGraph() {
 // ── Format checker ─────────────────────────────────────────────────────────
 async function checkFormats() {
   const url = el('url-input').value.trim();
-  if (!url) { showError('Fetch a URL first.'); return; }
+  if (!url) { showError('Enter a URL first.'); return; }
   const btn = el('formats-btn');
-  btn.textContent = 'CHECKING...';
+  btn.textContent = 'Checking...';
   btn.disabled    = true;
   try {
-    const res  = await fetch('/api/formats', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+    const res  = await fetch('/api/formats', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}) });
     const data = await res.json();
     renderFormatsPanel(data.formats || []);
   } catch (_) { showError('Could not fetch formats.'); }
   finally {
-    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> CHECK FORMATS`;
+    btn.innerHTML = `≡ Check Formats`;
     btn.disabled = false;
   }
 }
@@ -2298,40 +2222,40 @@ async function checkFormats() {
 function renderFormatsPanel(formats) {
   const panel = el('formats-panel');
   if (!formats.length) { panel.style.display = 'none'; return; }
+  panel.style.cssText = 'display:block;margin-top:8px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);max-height:180px;overflow-y:auto;font-size:11px;';
   panel.innerHTML = formats.map(f => {
-    const size = f.filesize ? (f.filesize/1048576).toFixed(1)+' MB' : '?';
+    const size = f.filesize ? (f.filesize/1048576).toFixed(1)+' MB' : '—';
     const type = f.has_video && f.has_audio ? '▶' : f.has_video ? '▬' : '♪';
-    return `<div style="display:flex;gap:10px;padding:6px 14px;border-bottom:1px solid var(--border);">
+    return `<div style="display:flex;gap:10px;padding:5px 12px;border-bottom:1px solid #f0f0f0;">
       <span style="color:var(--text3);min-width:12px;">${type}</span>
-      <span style="color:var(--amber);min-width:40px;">${escHtml(f.ext)}</span>
+      <span style="color:var(--blue);font-weight:bold;min-width:38px;">${escHtml(f.ext)}</span>
       <span style="color:var(--text);min-width:55px;">${escHtml(f.res)}${f.fps?'@'+f.fps:''}</span>
       <span style="color:var(--text2);flex:1;">${escHtml(f.note||'')}</span>
       <span style="color:var(--text3);">${size}</span>
     </div>`;
   }).join('');
-  panel.style.display = '';
 }
 
 // ── yt-dlp update ──────────────────────────────────────────────────────────
 async function updateYtDlp() {
   const btn = el('update-btn');
-  btn.textContent = '[↻] UPDATING...';
+  btn.textContent = '↻ Updating...';
   btn.disabled    = true;
   try {
-    const res  = await fetch('/api/update-ytdlp', { method: 'POST' });
+    const res  = await fetch('/api/update-ytdlp', { method:'POST' });
     const data = await res.json();
-    if (data.ok) { btn.textContent = '[✓] UPDATED'; btn.style.color = 'var(--green2)'; }
-    else { showError('Update failed: ' + (data.error || 'unknown')); btn.textContent = '[↻] UPDATE YT-DLP'; }
-  } catch (_) { showError('Update request failed.'); btn.textContent = '[↻] UPDATE YT-DLP'; }
+    if (data.ok) { btn.textContent = '✓ Updated!'; btn.style.color = 'var(--success)'; }
+    else { showError('Update failed: '+(data.error||'unknown')); btn.textContent = '↻ Update yt-dlp'; }
+  } catch (_) { showError('Update request failed.'); btn.textContent = '↻ Update yt-dlp'; }
   finally {
     btn.disabled = false;
-    setTimeout(() => { btn.textContent = '[↻] UPDATE YT-DLP'; btn.style.color = ''; }, 4000);
+    setTimeout(() => { btn.textContent = '↻ Update yt-dlp'; btn.style.color = ''; }, 4000);
   }
 }
 
 // ── History ────────────────────────────────────────────────────────────────
 function recordHistory(task, fmt, quality) {
-  downloadHistory.unshift({ title: task.title||'Unknown', fmt: fmt.toUpperCase(), quality, time: new Date().toLocaleTimeString() });
+  downloadHistory.unshift({ title:task.title||'Unknown', fmt:fmt.toUpperCase(), quality, time:new Date().toLocaleTimeString() });
   if (downloadHistory.length > 50) downloadHistory.pop();
   renderHistory('');
   el('history-panel').style.display = '';
@@ -2343,7 +2267,7 @@ function renderHistory(query) {
   const list = el('history-list'); if (!list) return;
   const entries = downloadHistory.filter(h => !query || h.title.toLowerCase().includes(query));
   if (!entries.length) {
-    list.innerHTML = '<div style="padding:10px 14px;font-size:11px;color:var(--text3);">No results</div>';
+    list.innerHTML = '<div style="padding:8px 12px;font-size:11px;color:var(--text3);">No results found.</div>';
     return;
   }
   list.innerHTML = entries.map(h => `
@@ -2365,18 +2289,20 @@ function setCookieStatus(data) {
   const dot = el('cookie-status-dot'), txt = el('cookie-status-text'), clr = el('cookie-clear-btn');
   if (!dot || !txt) return;
   if (data.active) {
-    dot.style.background = 'var(--green)';
-    dot.style.boxShadow  = '0 0 5px var(--green)';
-    txt.textContent      = `${data.source === 'uploaded' ? 'USER' : 'ENV'} COOKIES ACTIVE${data.size ? '  ' + (data.size/1024).toFixed(1) + ' KB' : ''}`;
-    txt.style.color      = 'var(--green)';
+    dot.style.background = '#44cc44';
+    dot.style.borderColor = '#228822';
+    txt.textContent      = `${data.source === 'uploaded' ? 'User-uploaded' : 'Server env'} cookies active${data.size ? ' — '+(data.size/1024).toFixed(1)+' KB' : ''}`;
+    txt.style.color      = 'var(--success)';
+    txt.style.fontWeight = 'bold';
     if (clr) clr.style.display = '';
     const dz = el('cookie-drop-zone');
-    if (dz) dz.style.borderColor = 'var(--green)';
+    if (dz) { dz.style.borderColor = '#44cc44'; dz.style.background = '#f0fbf0'; }
   } else {
-    dot.style.background = 'var(--text3)';
-    dot.style.boxShadow  = '';
-    txt.textContent      = 'NO COOKIES — age-restricted videos may fail';
-    txt.style.color      = 'var(--text3)';
+    dot.style.background = '#ccc';
+    dot.style.borderColor = '#aaa';
+    txt.textContent = 'No cookies loaded — age-restricted videos may fail';
+    txt.style.color = 'var(--text2)';
+    txt.style.fontWeight = 'normal';
     if (clr) clr.style.display = 'none';
   }
 }
@@ -2390,32 +2316,36 @@ function handleCookieDrop(event) {
 
 async function handleCookieFile(file) {
   if (!file) return;
-  if (!file.name.endsWith('.txt')) { showError('Cookie file must be a .txt (Netscape format).'); return; }
+  if (!file.name.endsWith('.txt')) { showError('Cookie file must be a .txt file in Netscape format.'); return; }
   const dz = el('cookie-drop-zone');
-  dz.style.borderColor = 'var(--amber)';
+  dz.style.borderColor = '#e07800';
   const statusTxt = el('cookie-status-text');
-  if (statusTxt) { statusTxt.textContent = 'UPLOADING...'; statusTxt.style.color = 'var(--amber)'; }
+  if (statusTxt) { statusTxt.textContent = 'Uploading...'; statusTxt.style.color = 'var(--orange)'; }
   const form = new FormData();
   form.append('cookies', file);
   try {
-    const res = await fetch('/api/cookies/upload', { method: 'POST', body: form });
+    const res = await fetch('/api/cookies/upload', { method:'POST', body:form });
     const data = await res.json();
     if (data.ok) {
-      setCookieStatus({ active: true, source: 'uploaded', size: data.size });
-      dz.querySelector('div:nth-child(2)').textContent = `✓ ${file.name} loaded`;
+      setCookieStatus({ active:true, source:'uploaded', size:data.size });
+      dz.querySelector('div:nth-child(2)').innerHTML = `<strong style="color:var(--success);">✓ ${file.name}</strong> loaded successfully`;
     } else {
       showError(data.error || 'Upload failed.');
-      dz.style.borderColor = 'var(--red)';
+      dz.style.borderColor = '#cc4444';
     }
   } catch (_) { showError('Upload request failed.'); }
 }
 
 async function clearCookies() {
   try {
-    await fetch('/api/cookies/clear', { method: 'POST' });
-    setCookieStatus({ active: false });
+    await fetch('/api/cookies/clear', { method:'POST' });
+    setCookieStatus({ active:false });
     const dz = el('cookie-drop-zone');
-    if (dz) { dz.style.borderColor = ''; dz.querySelector('div:nth-child(2)').textContent = 'Drop cookies.txt here or click to browse'; }
+    if (dz) {
+      dz.style.borderColor = '';
+      dz.style.background = '';
+      dz.querySelector('div:nth-child(2)').innerHTML = 'Drop <span style="color:var(--blue);">cookies.txt</span> here or click to browse';
+    }
     const inp = el('cookie-file-input');
     if (inp) inp.value = '';
   } catch (_) {}
@@ -2426,15 +2356,15 @@ function toggleCookiePanel() {
   const dz  = el('cookie-drop-zone');
   const btn = el('cookie-panel').querySelector('button');
   if (dz) dz.style.display = cookiePanelOpen ? '' : 'none';
-  if (btn) btn.textContent = cookiePanelOpen ? 'HIDE ▲' : 'SHOW ▼';
+  if (btn) btn.textContent = cookiePanelOpen ? 'Hide ▲' : 'Show ▼';
 }
 
-// ── Icon SVGs ──────────────────────────────────────────────────────────────
-const svgAttrs = `width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
-function iconClock()   { return `<svg ${svgAttrs}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`; }
-function iconChannel() { return `<svg ${svgAttrs}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
-function iconEye()     { return `<svg ${svgAttrs}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
-function iconList()    { return `<svg ${svgAttrs}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`; }
+// ── SVG icons ──────────────────────────────────────────────────────────────
+const svgA = `width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
+function iconClock()   { return `<svg ${svgA}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`; }
+function iconChannel() { return `<svg ${svgA}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
+function iconEye()     { return `<svg ${svgA}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
+function iconList()    { return `<svg ${svgA}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`; }
 </script>
 </body>
 </html>
