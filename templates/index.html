@@ -61,7 +61,149 @@
   --link:       #6baee0;
   --success:    #4aaa4a;
   --red-lite:   #3a1a1a;
+  /* Dark mode button overrides */
+  --btn-gray-bg1:   #3a3a3a;
+  --btn-gray-bg2:   #2e2e2e;
+  --btn-gray-text:  #dddddd;
+  --btn-gray-bdr:   #555555;
+  --toggle-bg1:     #3a3a3a;
+  --toggle-bg2:     #2e2e2e;
+  --toggle-text:    #cccccc;
+  --toggle-bdr:     #555;
 }
+
+/* ── Dark mode gray buttons ── */
+[data-theme="dark"] .btn-gray {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2e2e2e 100%);
+  border-color: #555;
+  color: #dddddd;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-theme="dark"] .btn-gray:hover {
+  background: linear-gradient(180deg, #484848 0%, #3a3a3a 100%);
+  color: #ffffff;
+  border-color: #666;
+}
+
+/* ── Dark mode toolbar ── */
+[data-theme="dark"] #toolbar {
+  background: linear-gradient(180deg, #333 0%, #2a2a2a 100%);
+  border-color: #444;
+}
+
+/* ── Dark mode panel heads ── */
+[data-theme="dark"] .panel-head {
+  background: linear-gradient(180deg, #353535 0%, #2c2c2c 100%);
+  border-color: #444;
+}
+[data-theme="dark"] .panel-head-title { color: #dddddd; }
+[data-theme="dark"] .panel-head-title::before { background: var(--blue); }
+
+/* ── Dark mode toggle buttons ── */
+[data-theme="dark"] .toggle-btn {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2e2e2e 100%);
+  border-color: #555;
+  color: #cccccc;
+}
+[data-theme="dark"] .toggle-btn:hover {
+  background: linear-gradient(180deg, #484848 0%, #3c3c3c 100%);
+  color: #ffffff;
+  border-color: #666;
+}
+[data-theme="dark"] .toggle-btn.active {
+  background: linear-gradient(180deg, #4a85cc 0%, #1a5fa8 100%);
+  border-color: #0d3d74;
+  color: #fff;
+}
+[data-theme="dark"] .toggle-btn.active-mp3 {
+  background: linear-gradient(180deg, #4aaa4a 0%, #2a7a2a 100%);
+  border-color: #1a5a1a;
+  color: #fff;
+}
+[data-theme="dark"] .toggle-btn.active-gif {
+  background: linear-gradient(180deg, #c060d0 0%, #883098 100%);
+  border-color: #5a1068;
+  color: #fff;
+}
+
+/* ── Dark mode inputs ── */
+[data-theme="dark"] .url-input,
+[data-theme="dark"] .input-field,
+[data-theme="dark"] #history-search {
+  background: #1e1e1e;
+  border-color: #555;
+  color: #e8e8e8;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .url-input::placeholder { color: #555; }
+[data-theme="dark"] .url-input:focus,
+[data-theme="dark"] .input-field:focus,
+[data-theme="dark"] #history-search:focus {
+  border-color: var(--blue);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 2px rgba(74,143,212,0.2);
+}
+
+/* ── Dark mode progress bar ── */
+[data-theme="dark"] .progress-track-outer {
+  background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  border-color: #444;
+}
+[data-theme="dark"] .progress-header {
+  background: linear-gradient(180deg, #353535 0%, #2c2c2c 100%);
+  border-color: #444;
+}
+[data-theme="dark"] .progress-stats-row,
+[data-theme="dark"] .status-bar {
+  background: #2c2c2c;
+  border-color: #444;
+}
+[data-theme="dark"] .segment-bars,
+[data-theme="dark"] .waveform-row,
+[data-theme="dark"] #speed-graph-wrap,
+[data-theme="dark"] .progress-ring-wrap,
+[data-theme="dark"] .phase-timeline { background: #282828; border-color: #444; }
+[data-theme="dark"] .segment-bar { background: #3a3a3a; }
+[data-theme="dark"] .wave-bar { background: #3a3a3a; }
+[data-theme="dark"] #speed-canvas { background: #1e2a3a; border-color: #2a3a4a; }
+[data-theme="dark"] .status-bar {
+  background: linear-gradient(180deg, #353535 0%, #2e2e2e 100%);
+}
+
+/* ── Dark mode save section ── */
+[data-theme="dark"] .save-shell { background: #1e2e1e; border-color: #3a6a3a; }
+[data-theme="dark"] .save-stats-row { background: #1a261a; border-color: #2a4a2a; }
+[data-theme="dark"] .save-shell .panel-head {
+  background: linear-gradient(180deg, #253525 0%, #1e2a1e 100%);
+  border-color: #3a6a3a;
+}
+
+/* ── Dark mode cookie panel ── */
+[data-theme="dark"] #cookie-drop-zone {
+  background: #242424;
+  border-color: #555;
+  color: #aaa;
+}
+[data-theme="dark"] #cookie-drop-zone:hover { background: #1a2a3a; border-color: var(--blue); }
+[data-theme="dark"] #cookie-status-bar { background: #282828; border-color: #444; }
+
+/* ── Dark mode history ── */
+[data-theme="dark"] #history-list { background: #2c2c2c; border-color: #444; }
+[data-theme="dark"] .history-entry { border-color: #383838; }
+[data-theme="dark"] .history-entry:hover { background: #333; }
+[data-theme="dark"] .hist-fmt { background: #1a2a3a; border-color: #2a4a6a; color: var(--blue); }
+
+/* ── Dark mode error ── */
+[data-theme="dark"] #error-box { background: #2a1a1a; border-color: #6a3a3a; }
+
+/* ── Dark mode card ── */
+[data-theme="dark"] .card-type { background: #1a2a3a; border-color: #2a4a6a; color: var(--blue); }
+[data-theme="dark"] .playlist-header { background: #333; border-color: #444; }
+[data-theme="dark"] .playlist-entry { border-color: #383838; }
+[data-theme="dark"] .playlist-entry:hover { background: #333; }
+[data-theme="dark"] .entry-checkbox { background: #222; border-color: #555; }
+
+/* ── Dark mode formats panel ── */
+[data-theme="dark"] #formats-panel { background: #2c2c2c; border-color: #444; }
 
 html { scroll-behavior: smooth; }
 
